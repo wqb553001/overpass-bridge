@@ -469,23 +469,22 @@
 					name: {
 						rules: [{
 							required: true,
-							errorMessage: '姓名不能为空'
+							errorMessage: '接口名称不能为空'
 						}]
 					},
-					age: {
+					url: {
 						rules: [{
 							required: true,
-							errorMessage: '年龄不能为空'
-						}, {
-							format: 'number',
-							errorMessage: '年龄只能输入数字'
+							errorMessage: 'Url 不能为空'
 						}]
 					}
 				},
 				// 自定义表单数据
 				customFormData: {
 					name: '',
-					age: '',
+					url: '',
+					method: 'POST',
+					limit: '0',
 					hobby: []
 				},
 				// 自定义表单校验规则
@@ -493,28 +492,14 @@
 					name: {
 						rules: [{
 							required: true,
-							errorMessage: '姓名不能为空'
+							errorMessage: '接口名称不能为空'
 						}]
 					},
-					age: {
+					url: {
 						rules: [{
 							required: true,
-							errorMessage: '年龄不能为空'
+							errorMessage: 'Url 不能为空'
 						}]
-					},
-					hobby: {
-						rules: [{
-								format: 'array'
-							},
-							{
-								validateFunction: function(rule, value, data, callback) {
-									if (value.length < 2) {
-										callback('请至少勾选两个兴趣爱好')
-									}
-									return true
-								}
-							}
-						]
 					}
 
 				},
@@ -546,8 +531,6 @@
 		},
 		onLoad() {},
 		onReady() {
-			// 设置自定义表单校验规则，必须在节点渲染完毕后执行
-			this.$refs.customForm.setRules(this.customRules)
 		},
 		methods: {
 			
