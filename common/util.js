@@ -80,6 +80,7 @@ function JsonValueDataType(value) {
 		return JsonValueDataTypeEnum.JSON_OBJECT;
 	}
 	if(Array.isArray(value)) {
+		// if(value[0]== null) return JsonValueDataTypeEnum.SINGLE_VALUE;
 		if(isJson(value[0])) return JsonValueDataTypeEnum.JSON_ARRAY; 
 		return JsonValueDataTypeEnum.SINGLE_VALUE;
 	}
