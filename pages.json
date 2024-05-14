@@ -150,7 +150,7 @@
 		{
 			"path": "pages/API/forms/forms",
 			"style": {
-				"navigationBarTitleText": "配置"
+				"navigationBarTitleText": "接口"
 			}
 		},
 		{
@@ -750,10 +750,26 @@
 					}
 				},
 				{
+					"path" : "flow/flow",
+					"style" : 
+					{
+						"navigationBarTitleText" : "流程",
+						"enablePullDownRefresh" : false
+					}
+				},
+				{
 					"path" : "thema/thema",
 					"style" : 
 					{
 						"navigationBarTitleText" : "主题",
+						"enablePullDownRefresh" : false
+					}
+				},
+				{
+					"path" : "protect/protect",
+					"style" : 
+					{
+						"navigationBarTitleText" : "异常",
 						"enablePullDownRefresh" : false
 					}
 				}

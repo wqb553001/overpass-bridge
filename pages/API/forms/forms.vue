@@ -208,10 +208,10 @@
 						</view>
 					</uni-forms-item>
 					
-					<uni-forms-item label="重试策略" class="retryStrategy">
+					<!-- <uni-forms-item label="重试策略" class="retryStrategy">
 						<uni-data-picker v-model="baseFormData.retryStrategy" :localdata="retryStrategy" @change="retryStrategyChange" popup-title="选择" :ellipsis="false" style="float: left; width: 340px; margin-right: 20px;"></uni-data-picker>
 						<uni-number-box :min="0" :max="100000000" :value="baseFormData.retryStrategyTimes" style="float: left; " :color="numberBoxProps.retryStrategy.color" :disabled="numberBoxProps.retryStrategy.disabled"  width="120" />
-					</uni-forms-item>
+					</uni-forms-item> -->
 					
 					<uni-forms-item label="管理" >
 						
@@ -552,12 +552,26 @@
 				this.baseFormData.dynamicTable.groupMergeField.array.splice(index, 1)
 			},
 			submit(ref) {
-				console.log(this.baseFormData);
+				console.log("数据", JSON.stringify(this.baseFormData));
+				// console.log("form", JSON.stringify(this.form));
 				this.$refs[ref].validate().then(res => {
 					console.log('success', res);
 					uni.showToast({
 						title: `校验通过`
 					})
+					// this.onSubmit(ref)
+					uni.request({
+						url: 'http://localhost:8088/overpass/service-bridge/manage',
+						method: 'POST',
+						headers: {'Content-Type': 'application/json'},
+						data: {"baseFormData": JSON.stringify(this.baseFormData)},
+						success: (res) => {
+							console.log('提交成功', res);
+						},
+						fail: (err) => {
+							console.error('提交失败', err);
+						}
+					});
 				}).catch(err => {
 					console.log('err', err);
 				})
@@ -899,7 +913,23 @@
 				}
 			},
 
- 
+			 onSubmit(event) {
+				// event.preventDefault(); // 阻止表单默认提交行为
+				console.log('提交的数据：', this.form);
+				// 这里可以执行提交表单的逻辑，比如发送请求到服务器
+				// 例如使用uni.request提交数据
+				uni.request({
+					url: 'http://localhost:8088/overpass/service-bridge/manage',
+					method: 'POST',
+					data: uni.stringifyQuery({prompt: JSON.stringify(this.form)}),
+					success: (res) => {
+						console.log('提交成功', res);
+					},
+					fail: (err) => {
+						console.error('提交失败', err);
+					}
+				});
+			},
 		
 			// 获取数据
 			// getData(pageCurrent, value = '') {

@@ -4,19 +4,21 @@
 			<uni-table ref="table" :loading="loading" border stripe emptyText="暂无更多数据" >
 				<uni-tr>
 					<uni-th width="4" align="center">序号</uni-th>
-					<uni-th width="40" align="center">流程名称</uni-th>
-					<uni-th align="center">固定参数</uni-th>
+					<uni-th width="40" align="center">接口名称</uni-th>
+					<uni-th align="center">关联关系</uni-th>
 					<uni-th align="center">数据字段</uni-th>
 					<uni-th width="4" align="center">重命名</uni-th>
 				</uni-tr>
 				<uni-tr v-for="(item, index) in baseFormData.respExplainedFormat" :key="index+1">
 					<uni-td align="left">{{ index+1 }}</uni-td>
 					<uni-td> <view class="name">{{ item.name }}</view> </uni-td>
-					<uni-td align="left" >{{ item.relation }}</uni-td>
+					<uni-td align="left" >{{ index>0?item.relation:'第一个接口，无需配置' }}</uni-td>
 					<uni-td align="left" >{{ item.fields }}</uni-td>
 					<uni-td> 
 						<button class="button" size="mini" type="primary" @tap="" style="margin-left: -1px; " >复制</button> 
-						<button class="button" size="mini" type="primary" @tap="inputDialogToggle(item.id, item.relation, index)" style="margin-left: -1px; " >固定参数设置</button> 
+						<view v-if="index>0">
+							<button class="button" size="mini" type="primary" @tap="inputDialogToggle(item.id, item.relation, index)" style="margin-left: -1px; " >关联设置</button> 
+						</view>
 						<button class="button" size="mini" type="primary" @tap="addDynamicTable($event, item.id, index)" style="margin-left: -1px; " >新增</button> 
 					</uni-td>
 				</uni-tr>
@@ -42,7 +44,7 @@
 		data() {
 			return {
 				baseFormData: {
-					respExplainedFormat: [{id: 1001, name: 'E1001'+'订单流程', desc: '流程详情', relation: 'id=orderId', fields: '字段集', fieldsExplain: ''}]
+					respExplainedFormat: [{id: 1001, name: 'E1001'+'订单数据', desc: '接口详情', relation: 'id=orderId', fields: '字段集', fieldsExplain: ''}]
 				},
 				// 重命名字段弹出框
 				relation: {
@@ -64,16 +66,16 @@
 		methods: {
 			addDynamicTable(e, id, index) {
 				// 添加字段输入框
-				this.baseFormData.respExplainedFormat.push({id: Date.now(), name: 'E1001'+'订单流程' + id, desc: '流程详情', relation: 'sourceTypes=[1,3,5]', fields: 'id=userId', fieldsExplain: ''});
+				this.baseFormData.respExplainedFormat.push({id: Date.now(), name: 'E1001'+'订单数据' + id, desc: '接口详情', relation: 'id=userId', fields: 'id=userId', fieldsExplain: ''});
 				// this.$forceUpdate()
 			},
 			// 弹出输入框
 			inputDialogToggle(id, relation, index) {
 				// console.log("点击修改 ", index)
-				// if(index == 0) {
-				// 	this.messageToggle('error', '无需设置。\n关联是指当前接口与上一个接口的关联关系。第一个接口，不存在上一个接口。')
-				// 	return;
-				// }
+				if(index == 0) {
+					this.messageToggle('error', '无需设置。\n关联是指当前接口与上一个接口的关联关系。第一个接口，不存在上一个接口。')
+					return;
+				}
 				this.relation.id = id
 				this.relation.index = index
 				this.relation.value = relation
