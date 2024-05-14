@@ -92,11 +92,12 @@
 						{
 							name:'配置',
 							url:'forms',
-						}
-						, 
-						{
-							name:'请求配置',
-							url:'form',
+						},{
+							name:'主题',
+							url:'thema',
+						},{
+							name:'配置说明',
+							url:'explain',
 						}
 						// , 
 						// 'input', 'label', 'picker', 'picker-view', 'radio',

@@ -14,26 +14,18 @@
 						<uni-easyinput v-model="baseFormData.url" @blur="checkUrl" placeholder="请输入URL" />
 					</uni-forms-item>
 					<uni-forms-item label="请求方式" required>
-						<uni-data-checkbox v-model="baseFormData.method" :localdata="reqMethod" />
+						<uni-data-checkbox style="padding-top: 6px;" v-model="baseFormData.method" :localdata="reqMethod" />
 					</uni-forms-item>
 					
 					<uni-forms-item label="传递参数">
 						
 						<uni-collapse > 
-						<!--<view style="display: block;">
-								<uni-data-checkbox v-model="baseFormData.limit" @change="dataLimitChange" :localdata="dataLength" style="float: left;"/>
-								<uni-number-box :min="0" :max="100000000" :value="baseFormData.limitNum" style="float: left;" :color="numberBoxProps.limit.color" :disabled="numberBoxProps.limit.disabled"  width="60" />
-							</view> -->
-						<!-- <uni-collapse> -->
 							<uni-forms-item label="headers" labelWidth="68px">
 								<uni-easyinput v-model="baseFormData.headers" placeholder="请输入header 如 token=abcdef;Content-Type=application/json " />
 							</uni-forms-item>
 							<uni-forms-item label="固定传参" labelWidth="68px">
 								<uni-easyinput v-model="baseFormData.params" placeholder="请输入固定参数 如 orderStatus = 1;flow = 1 " />
 							</uni-forms-item>
-							<!-- <uni-forms-item label="结果集" >
-								<uni-data-picker v-model="baseFormData.dataContentField" :localdata="dataContentFields" @change="dataContentFieldChange" popup-title="选取结果集字段" :ellipsis="false" ></uni-data-picker>
-							</uni-forms-item> -->
 							
 							<uni-forms :rules="dynamicRules" :model="dynamicFormData" labelWidth="68px">
 								<uni-forms-item label="时间字段" name="email">
@@ -52,9 +44,6 @@
 										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.array[index].opt" :localdata="opts" @change="dataContentFieldChange" popup-title="选取连接方式" :ellipsis="false" style="width: 80px; flex: none;"></uni-data-picker>
 										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.array[index].time" :localdata="paramTimeList" @change="paramTimeListChange($event, index)" popup-title="选取时间点" :ellipsis="false"></uni-data-picker>
 										<uni-number-box :min="1" :max="1000" :value="baseFormData.dynamicTable.timeField.array[index].second" style="float: left;" :color="numberBoxProps.paramTimes[index].color" :disabled="numberBoxProps.paramTimes[index].disabled"  width="60" />
-										<!-- <uni-forms-item label="连接方式" required style="margin-top: 5px;">
-										</uni-forms-item>
-										<uni-easyinput v-model="dynamicFormData.domains[index].value" placeholder="请输入时间字段" /> -->
 										<button class="button" size="mini" type="default" @click="delDynamicTableTimeFields(item.id)">删除</button>
 									</view>
 								</uni-forms-item>
@@ -149,10 +138,10 @@
 										<uni-card :is-shadow="false" is-full>
 											<text class="uni-h6">表达式配置样例为: #nextPage==0|nextPage 或 #pages==pageNum|pages&pageNum</text>
 										</uni-card>
-										<uni-forms-item label="正常判断" required >
+										<uni-forms-item label="正常判断" required  style="margin-top: 15px;" >
 											<uni-easyinput v-model="baseFormData.statusField" placeholder="请输入判断正常条件 如 isSuccess = true 或 #status == 0|status" />
 										</uni-forms-item>
-										<uni-forms-item label="结果集" required style="margin-top: 5px;">
+										<uni-forms-item label="结果集" required >
 											<uni-data-picker v-model="baseFormData.dataContentField" :localdata="dataContentFields" @change="dataContentFieldChange" popup-title="选取结果集字段" :ellipsis="false" ></uni-data-picker>
 										</uni-forms-item>
 										<uni-forms-item label="下一页" required>
@@ -179,36 +168,26 @@
 					
 					<uni-forms-item label="分组聚合" >
 						<view>
-							<uni-collapse> 
-								<!-- <uni-collapse-item  title-border="auto" title="——————————————————展开设置分组聚合条件—————————————————— " style="background-color: antiquewhite;" :disabled="pageCondition.disabled" :open="pageCondition.open" :show-animation="false"> -->
-									<uni-forms :model="dynamicFormData" labelWidth="68px">
-										<uni-forms-item label="分组字段" name="email">
-											<view class="form-item">
-												<zxz-uni-data-select v-model="baseFormData.groupField" filterable multiple dataKey="label" dataValue="value"
-													:localdata="simpleFields" @change="change"></zxz-uni-data-select>
-												<!-- <uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.one.groupField" placeholder="请输入分组字段 如 shopId,orderType" /> -->
-												<view style="font-size: 14px; color: #666; padding: 0 5px 0 15px;">聚合</view>
-												<uni-data-picker v-model="baseFormData.dynamicTable.groupMergeField.one.opt" :localdata="mergeStyles" @change="mergeStyleChange" popup-title="选取聚合方式" :ellipsis="false" style="width: 120px; flex: none;" ></uni-data-picker>
-												<uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.one.mergeField" placeholder="请输入聚合字段表达式" />
-											</view>
-										</uni-forms-item>
-										<uni-forms-item v-for="(item,index) in baseFormData.dynamicTable.groupMergeField.array" :key="item.id"
-											:label="item.label" :rules="item.rules" :name="['groupMergeFields',index,'value']">
-											<view class="form-item">
-												<zxz-uni-data-select v-model="baseFormData.dynamicTable.groupMergeField.array[index].groupField" filterable multiple dataKey="label" dataValue="value"
-													:localdata="simpleFields" @change="change"></zxz-uni-data-select>
-												<!-- <uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.array[index].groupField" placeholder="请输入分组字段 如 shopId,orderType" /> -->
-												<view style="font-size: 14px; color: #666; padding: 0 5px 0 15px;">聚合</view>
-												<uni-data-picker v-model="baseFormData.dynamicTable.groupMergeField.array[index].opt" :localdata="mergeStyles" @change="mergeStyleChange($event, index)" popup-title="选取聚合方式" :ellipsis="false"  style="width: 120px; flex: none;"></uni-data-picker>
-												<uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.array[index].mergeField" placeholder="请输入聚合字段表达式" />
-												<button class="button" size="mini" type="default" @click="delDynamicTableGroupMergeFields(item.id)">删除</button>
-											</view>
-										</uni-forms-item>
-									</uni-forms>
-									<view class="button-group">
-										<button type="primary" size="default" @click="addDynamicTableGroupMergeField">新增分组聚合</button>
-									</view>
-							</uni-collapse>
+							<view class="form-item">
+								<view style="font-size: 14px; color: #666; padding: 0 5px 0 0px;">分组字段</view>
+								<zxz-uni-data-select v-model="baseFormData.groupField" filterable multiple dataKey="label" dataValue="value" :localdata="simpleFields" @change="change"></zxz-uni-data-select>
+								<view style="font-size: 14px; color: #666; padding: 0 5px 0 15px;">聚合</view>
+								<uni-data-picker v-model="baseFormData.dynamicTable.groupMergeField.one.opt" :localdata="mergeStyles" @change="mergeStyleChange" popup-title="选取聚合方式" :ellipsis="false" style="width: 120px; flex: none;" ></uni-data-picker>
+								<uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.one.mergeField" placeholder="请输入聚合字段表达式" />
+							</view>
+							<view v-for="(item,index) in baseFormData.dynamicTable.groupMergeField.array" :key="item.id" :label="item.label" :rules="item.rules" :name="['groupMergeFields',index,'value']" style="margin-top: 22px;">
+								<view class="form-item">
+									<view style="font-size: 14px; color: #666; padding: 0 5px 0 0px;">分组字段</view>
+									<zxz-uni-data-select v-model="baseFormData.dynamicTable.groupMergeField.array[index].groupField" filterable multiple dataKey="label" dataValue="value" :localdata="simpleFields" @change="change"></zxz-uni-data-select>
+									<view style="font-size: 14px; color: #666; padding: 0 5px 0 15px;">聚合</view>
+									<uni-data-picker v-model="baseFormData.dynamicTable.groupMergeField.array[index].opt" :localdata="mergeStyles" @change="mergeStyleChange($event, index)" popup-title="选取聚合方式" :ellipsis="false"  style="width: 120px; flex: none;"></uni-data-picker>
+									<uni-easyinput v-model="baseFormData.dynamicTable.groupMergeField.array[index].mergeField" placeholder="请输入聚合字段表达式" />
+									<button class="button" size="mini" type="default" @click="delDynamicTableGroupMergeFields(item.id)">删除</button>
+								</view>
+							</view>
+							<view class="button-group">
+								<button type="primary" size="default" @click="addDynamicTableGroupMergeField">新增分组聚合</button>
+							</view>
 						</view>
 					</uni-forms-item>
 					
@@ -278,10 +257,10 @@
 				},
 				// 聚合类型
 				mergeStyles: [
-					{text: 'avg 平均值',	value: 10},
-					{text: 'min 最小值',	value: 20},
-					{text: 'max 最大值',	value: 30},
-					{text: 'sum 累加值',	value: 40},
+					{text: 'avg 平均值',		value: 10},
+					{text: 'min 最小值',		value: 20},
+					{text: 'max 最大值',		value: 30},
+					{text: 'sum 累加值',		value: 40},
 				],
 				// 时间参数
 				paramTimeList: [
@@ -298,11 +277,11 @@
 					{text: 'n年初 凌晨',		value: 110},
 				],
 				opts: [
-					{text: '>',	value: 10},
-					{text: '<',	value: 20},
-					{text: '>=',value: 30},
-					{text: '<=',value: 40},
-					{text: '!=',value: 50},
+					{text: '>',		value: 10},
+					{text: '<',		value: 20},
+					{text: '>=',	value: 30},
+					{text: '<=',	value: 40},
+					{text: '!=',	value: 50},
 				],
 				pageCondition: {
 					disabled: true,
@@ -319,13 +298,13 @@
 					value: ''
 				},
 				// 执行时机-示例-默认选项
-				excuteTimeExample: 7,
+				excuteTimeExample: 70,
 				multiIndex: [0, 0, 1],
 				numberBoxProps: {
-					paramTime: 	 	{color: "#fff",disabled: true,},
-					paramTimes:    [{color: "#fff",disabled: true,}],
-					limit: 			{color: "#fff",disabled: true,},
-					retryStrategy: 	{color: "#fff",disabled: true,},
+					paramTime: 	 	{color: "#fff",	disabled: true,},
+					paramTimes:    [{color: "#fff",	disabled: true,}],
+					limit: 			{color: "#fff",	disabled: true,},
+					retryStrategy: 	{color: "#fff",	disabled: true,},
 				},				
 				dataVolid: {
 					respJsonFormat: false,
@@ -378,6 +357,12 @@
 						},
 					}
 				},
+				// 单选数据源
+				reqMethod: [// 默认选项，在data中设置
+					{text: 'POST',value: 'POST',},{text: 'GET',value: 'GET'},{text: '其他',value: '其他'}],
+				// 单选数据源
+				dataLength: [// 默认选项，在data中设置
+					{text: '分页全取',value: 0},{text: '取1条',value: 1},{text: '取指定数量',value: 2}],
 				dataContentFields: [],
 				// 执行时机
 				excuteTime: [
@@ -425,12 +410,6 @@
 					name: '',
 					age: '',
 				},
-				// 单选数据源
-				reqMethod: [// 默认选项，在data中设置
-					{text: 'POST',value: 'POST',},{text: 'GET',value: 'GET'},{text: '其他',value: '其他'}],
-				// 单选数据源
-				dataLength: [// 默认选项，在data中设置
-					{text: '分页全取',value: 0},{text: '取1条',value: 1},{text: '取指定数量',value: 2}],
 				// 多选数据源
 				hobbys: [
 					{text: '跑步',value: 0}, {text: '游泳',value: 1}, {text: '绘画',value: 2}, {text: '足球',value: 3}, {text: '篮球',value: 4}, {text: '其他',value: 5}],
@@ -445,7 +424,7 @@
 				},
 				// 校验规则
 				rules: {
-					name: {rules: [{	required: true,	errorMessage: '接口名称不能为空'}]},
+					name: {rules: [{required: true,	errorMessage: '接口名称不能为空'}]},
 					url: {rules: [{	required: true,	errorMessage: 'Url 不能为空'}]
 					}
 				},
@@ -459,7 +438,7 @@
 				},
 				// 自定义表单校验规则
 				customRules: {
-					name: {rules: [{	required: true,	errorMessage: '接口名称不能为空'}]},
+					name: {rules: [{required: true,	errorMessage: '接口名称不能为空'}]},
 					url: {rules: [{	required: true,	errorMessage: 'Url 不能为空'}]
 					}
 
@@ -484,7 +463,7 @@
 			}
 		},
 		onLoad() {
-			this.getData(1)
+			// this.getData(1)
 			// 取指定数量 的显示隐藏 设置
 			let selectVal =  this.baseFormData.limit 
 			if(selectVal == 0){
@@ -672,12 +651,12 @@
 			nextPageStrategyChange(e){
 				const selectVal = e.detail.value[0].value
 				// 1-递增页号;2-指针顺取
-				if(selectVal == 1){ // '请输入下一页取值条件 如 page = page + 1 或 startId = id '
+				if(selectVal == 10){ // '请输入下一页取值条件 如 page = page + 1 或 startId = id '
 					this.placeholder.nextPageField = '请输入下一页取值条件 如 page:#page + 1|page'
 				}else{
 					this.placeholder.nextPageField = '请输入下一页取值条件 如 startId = id'
 				}
-				// this.$forceUpdate()  // 强制组件重新渲染
+				this.$forceUpdate()  // 强制组件重新渲染
 				console.log('e:',selectVal);
 			},
 			jsonDataVolid(){
@@ -884,23 +863,60 @@
 				this.messageToggle('error', msg + '未通过，请核查！')
 				return false
 			},
+			
+			request(method){
+				if(method=='GET'){
+					// 发送GET请求
+					uni.request({
+						url: '', // 你的后端API地址
+						method: 'GET',
+						success: (res) => {
+							console.log('GET请求成功：', res.data);
+						},
+						fail: (err) => {
+							console.error('GET请求失败：', err);
+						}
+					});
+				}else{
+					// 发送POST请求
+					uni.request({
+						url: 'https://your-backend-endpoint.com/api/data', // 你的后端API地址
+						method: 'POST',
+						data: {
+							key1: 'value1',
+							key2: 'value2'
+						},
+						header: {
+							'content-type': 'application/json' // 默认值
+						},
+						success: (res) => {
+							console.log('POST请求成功：', res.data);
+						},
+						fail: (err) => {
+							console.error('POST请求失败：', err);
+						}
+					});
+				}
+			},
+
+ 
 		
 			// 获取数据
-			getData(pageCurrent, value = '') {
-				this.table.loading = true
-				this.table.pageCurrent = pageCurrent
-				this.request({
-					pageSize: this.table.pageSize,
-					pageCurrent: pageCurrent,
-					value: value,
-					success: res => {
-						// console.log('data', res);
-						this.table.tableData = res.data
-						this.table.total = res.total
-						this.table.loading = false
-					}
-				})
-			},
+			// getData(pageCurrent, value = '') {
+			// 	this.table.loading = true
+			// 	this.table.pageCurrent = pageCurrent
+			// 	this.request({
+			// 		pageSize: this.table.pageSize,
+			// 		pageCurrent: pageCurrent,
+			// 		value: value,
+			// 		success: res => {
+			// 			// console.log('data', res);
+			// 			this.table.tableData = res.data
+			// 			this.table.total = res.total
+			// 			this.table.loading = false
+			// 		}
+			// 	})
+			// },
 			// 伪request请求
 			request(options) {
 				const { pageSize, pageCurrent, success, value } = options
@@ -1062,17 +1078,7 @@
 		padding-bottom: 2px; // padding-bottom 更有效
 	}
 	
-	// // 无效
-	// ::v-deep .uni-easyinput__content-textarea .respExplained{
-	// 	line-height: 1.5;
-	// 	font-size: 28rpx;
-	// 	height: 60rpx;
-	// 	min-height: 60rpx;
-	// 	/* #ifndef APP-NVUE */
-	// 	min-height: 60rpx;
-	// 	width: auto;
-	// 	/* #endif */
-	// }
+
 	
 	// // 有变化
 	// .respExplained{

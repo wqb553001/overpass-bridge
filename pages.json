@@ -2,7 +2,7 @@
 	"leftWindow": {
 		"path": "windows/left-window.vue",
 		"style": {
-			"width": "350px"
+			"width": "200px"
 		}
 	},
 	"topWindow": {
@@ -148,15 +148,15 @@
 			}
 		},
 		{
-			"path": "pages/API/form/form",
-			"style": {
-				"navigationBarTitleText": "请求配置"
-			}
-		},
-		{
 			"path": "pages/API/forms/forms",
 			"style": {
 				"navigationBarTitleText": "配置"
+			}
+		},
+		{
+			"path": "pages/API/explain/explain",
+			"style": {
+				"navigationBarTitleText": "配置说明"
 			}
 		},
 		{
@@ -747,6 +747,14 @@
 					"path": "websocket-global/websocket-global",
 					"style": {
 						"navigationBarTitleText": "websocket-global"
+					}
+				},
+				{
+					"path" : "thema/thema",
+					"style" : 
+					{
+						"navigationBarTitleText" : "主题",
+						"enablePullDownRefresh" : false
 					}
 				}
 			]
