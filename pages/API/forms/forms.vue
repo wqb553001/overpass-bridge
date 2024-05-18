@@ -7,6 +7,12 @@
 			<view class="example">
 				<!-- 基础用法，不包含校验规则 -->
 				<uni-forms ref="baseForm" :model="baseFormData" labelWidth="80px">
+					<view v-if="baseFormData.lastId>0">
+						<uni-forms-item label="关联关系" required>
+							<uni-easyinput v-model="baseFormData.relation" placeholder="请输入与上一接口的关联关系" />
+						</uni-forms-item>
+					</view>
+					
 					<uni-forms-item label="接口名称" required>
 						<uni-easyinput v-model="baseFormData.name" placeholder="请输入接口名称" />
 					</uni-forms-item>
@@ -91,15 +97,14 @@
 													class="info-text">&nbsp;&nbsp;&nbsp;&nbsp;返回值结构中，不用的字段，既增加了处理的负担，又耗费了系统资源，请尽包括需要的字段，其余字段请移除！</text>
 											</view>
 											<view class="close">
-												<button @click="closeDrawer('showRight')"><text
-														class="word-btn-white">关闭Drawer</text></button>
+												<button @click="closeDrawer('showRight')">
+													<text class="word-btn-white">关闭Drawer</text>
+												</button>
 											</view>
 
 											<view class="button-group">
-												<button class="word-btn-white" size="mini" @click="jsonDataVolid()">JSON
-													格式核查</button>
-												<button class="word-btn-white" size="mini"
-													@click="checkUrl()">提交</button>
+												<button class="word-btn-white" size="mini" @click="jsonDataVolid()">JSON 格式核查</button>
+												<!-- <button class="word-btn-white" size="mini" @click="checkUrl()">提交</button> -->
 											</view>
 
 											<view class="uni-textarea">
@@ -109,9 +114,9 @@
 											</view>
 
 											<view class="button-group close">
-												<button class="word-btn-white" size="mini" @click="add">新增域名</button>
-												<button class="word-btn-white" size="mini"
-													@click="submit('dynamicForm')">提交</button>
+												<button class="word-btn-white" size="mini" @click="jsonDataVolid()">JSON 格式核查</button>
+												<!-- <button class="word-btn-white" size="mini" @click="add">新增域名</button>
+												<button class="word-btn-white" size="mini" @click="submit('dynamicForm')">提交</button> -->
 											</view>
 
 											<view class="close">
@@ -265,7 +270,7 @@
 					</uni-forms-item>
 
 					<uni-forms-item label="调度示例">
-						<uni-data-picker v-model="excuteTimeExample" :localdata="excuteTime" @change="excuteTimeChange"
+						<uni-data-picker v-model="baseFormData.executeTimeExample" :localdata="executeTime" @change="executeTimeChange"
 							popup-title="查看执行时机示例" :ellipsis="false"></uni-data-picker>
 					</uni-forms-item>
 
@@ -276,7 +281,7 @@
 									依需修改
 								</view>
 								<view class="uni-list-cell-db">
-									<uni-easyinput v-model="baseFormData.excuteTimeCron" @blur="cronCheck"
+									<uni-easyinput v-model="baseFormData.executeTimeCron" @blur="cronCheck"
 										placeholder="请确认 执行时机 cron 表达式" />
 								</view>
 							</view>
@@ -319,103 +324,79 @@
 
 <script>
 	import * as util from '../../../common/util.js'
+	// import {dataLength,mergeStyles,paramTimeList,opts} from '../../../common_data/interface_data.js'
+	import * as base from '../../../common_data/interface_data.js'
 
 	export default {
-
-
+		created() {
+			this.dataLength = base.dataLength
+			this.mergeStyles = base.mergeStyles
+			this.paramTimeList = base.paramTimeList
+			this.opts = base.opts
+			
+			this.retryStrategy = base.retryStrategy
+			this.executeTime = base.executeTime
+			this.nextPageStrategy = base.nextPageStrategy
+			this.reqMethod = base.reqMethod
+			
+		},
 		data() {
 			return {
-				// 
+				// 提示信息弹窗 
+				// 基础表单数据
+				baseFormData: {
+					id: 0,
+					lastId: 0,
+					nextId: 0,
+					name: '',
+					url: '',
+					method: 'POST',
+					respExplainedJsonStr: '',
+					limit: 0,
+					limitNum: 0,
+					nextPageField: '',
+					pageNumField: '',
+					isLastPageField: '',
+					statusField: '',
+					filterCondition: '',
+					dataContentField: '',
+					// hobby: [5],
+					datetimesingle: 1627529992399,
+					executeTimeExample: 70,
+					executeTimeCron: "0 15 10 ? * *",
+					retryStrategy: "-1",
+					nextPageStrategy: 1,
+					retryStrategyTimes: "0",
+					skills: 0,
+					dynamicTable: {
+						timeField: {
+							one: {
+								opt: 0,
+								time: 0,
+								field: ''
+							},
+							array: []
+							// array: [{id: 2, label: '时间字段', opt:2, time:1, field:'',
+							// 		rules: [{'required': true, errorMessage: '时间字段必填'}]
+							// }]
+						},
+						groupMergeField: {
+							one: {
+								opt: 0,
+								time: 0,
+								groupField: '',
+								mergeField: ''
+							},
+							array: []
+							// array: [{id: 2, label: '分组字段', opt:2, time:1, groupField:'', mergeField:''}]
+						},
+					}
+				}, 
 				simpleFields: [],
 				// 输入框-提示信息
 				placeholder: {
 					nextPageField: '请输入下一页取值条件 如 page:#page + 1|page'
 				},
-				// 聚合类型
-				mergeStyles: [{
-						text: 'avg 平均值',
-						value: 10
-					},
-					{
-						text: 'min 最小值',
-						value: 20
-					},
-					{
-						text: 'max 最大值',
-						value: 30
-					},
-					{
-						text: 'sum 累加值',
-						value: 40
-					},
-				],
-				// 时间参数
-				paramTimeList: [{
-						text: '执行当下 now',
-						value: 10
-					},
-					{
-						text: '今日 凌晨',
-						value: 20
-					},
-					{
-						text: 'n日前 凌晨',
-						value: 30
-					},
-					{
-						text: '本周初 凌晨',
-						value: 40
-					},
-					{
-						text: 'n周初 凌晨',
-						value: 50
-					},
-					{
-						text: '本季度初 凌晨',
-						value: 60
-					},
-					{
-						text: 'n季度初 凌晨',
-						value: 70
-					},
-					{
-						text: '本月初 凌晨',
-						value: 80
-					},
-					{
-						text: 'n月初 凌晨',
-						value: 90
-					},
-					{
-						text: '本年初 凌晨',
-						value: 100
-					},
-					{
-						text: 'n年初 凌晨',
-						value: 110
-					},
-				],
-				opts: [{
-						text: '>',
-						value: 10
-					},
-					{
-						text: '<',
-						value: 20
-					},
-					{
-						text: '>=',
-						value: 30
-					},
-					{
-						text: '<=',
-						value: 40
-					},
-					{
-						text: '!=',
-						value: 50
-					},
-				],
 				pageCondition: {
 					disabled: true,
 					open: false
@@ -469,241 +450,15 @@
 					messageText: '这是一条成功提示',
 					value: ''
 				},
-				// 提示信息弹窗 - end  -->>--
-				// 基础表单数据
-				baseFormData: {
-					name: '',
-					url: '',
-					method: 'POST',
-					respExplainedJsonStr: '',
-					limit: 0,
-					limitNum: '0',
-					nextPageField: '',
-					pageNumField: '',
-					isLastPageField: '',
-					statusField: '',
-					dataContentField: '',
-					// hobby: [5],
-					datetimesingle: 1627529992399,
-					excuteTimeCron: "0 15 10 ? * *",
-					retryStrategy: "-1",
-					nextPageStrategy: 1,
-					retryStrategyTimes: "0",
-					skills: 0,
-					dynamicTable: {
-						timeField: {
-							one: {
-								opt: 0,
-								time: 0,
-								field: ''
-							},
-							array: []
-							// array: [{id: 2, label: '时间字段', opt:2, time:1, field:'',
-							// 		rules: [{'required': true, errorMessage: '时间字段必填'}]
-							// }]
-						},
-						groupMergeField: {
-							one: {
-								opt: 0,
-								time: 0,
-								groupField: '',
-								mergeField: ''
-							},
-							array: []
-							// array: [{id: 2, label: '分组字段', opt:2, time:1, groupField:'', mergeField:''}]
-						},
-					}
-				},
-				// 单选数据源
-				reqMethod: [ // 默认选项，在data中设置
-					{
-						text: 'POST',
-						value: 'POST',
-					}, {
-						text: 'GET',
-						value: 'GET'
-					}, {
-						text: '其他',
-						value: '其他'
-					}
-				],
-				// 单选数据源
-				dataLength: [ // 默认选项，在data中设置
-					{
-						text: '分页全取',
-						value: 0
-					}, {
-						text: '取1条',
-						value: 1
-					}, {
-						text: '取指定数量',
-						value: 2
-					}
-				],
 				dataContentFields: [],
-				// 执行时机
-				excuteTime: [{
-					text: '表示每2秒 执行任务		【0/2 * * * * ?】',
-					value: 10,
-					cron: '0/2 * * * * ?'
-				}, {
-					text: '每2分钟 执行任务		【0 0/2 * * * ?】',
-					value: 20,
-					cron: '0 0/2 * * * ?'
-				}, {
-					text: '每月的1日的凌晨2点 执行任务		【0 0 2 1 * ?】',
-					value: 30,
-					cron: '0 0 2 1 * ?'
-				}, {
-					text: '每天上午10点，下午2点，4点 执行任务	【0 0 10,14,16 * *】',
-					value: 40,
-					cron: '0 0 10,14,16 * * ?'
-				}, {
-					text: '朝九晚五工作时间内每半小时 执行任务	【0 0/30 9-17 * *】',
-					value: 50,
-					cron: '0 0/30 9-17 * * ?'
-				}, {
-					text: '每天中午12点 执行任务		【0 0 12 * * ?】',
-					value: 60,
-					cron: '0 0 12 * * ?'
-				}, {
-					text: '每天上午10:15 执行任务		【0 15 10 ? * *】',
-					value: 70,
-					cron: '0 15 10 ? * *'
-				}, {
-					text: '每天下午2点到下午2:59期间的每1分钟 执行任务		【0 * 14 * * ?】',
-					value: 80,
-					cron: '0 * 14 * * ?'
-				}, {
-					text: '每天下午2点到下午2:55期间的每5分钟 执行任务		【0 0/5 14 * * ?】',
-					value: 90,
-					cron: '0 0/5 14 * * ?'
-				}, {
-					text: '每天下午2点到2:55期间和下午6点到6:55期间的每5分钟 执行任务		【0 0/5 14,18 * * ?】',
-					value: 100,
-					cron: '0 0/5 14,18 * * ?'
-				}, {
-					text: '每天下午2点到下午2:05期间的每1分钟 执行任务		【0 0-5 14 * * ?】',
-					value: 110,
-					cron: '0 0-5 14 * * ?'
-				}, {
-					text: '每月15日上午10:15 执行任务		【0 15 10 15 * ?】',
-					value: 120,
-					cron: '0 15 10 15 * ?'
-				}, {
-					text: '每月最后一日的上午10:15 执行任务		【0 15 10 L * ?】',
-					value: 130,
-					cron: '0 15 10 L * ?'
-				}, {
-					text: '每个星期三中午12点 执行任务		【0 0 12 ? * WED】',
-					value: 140,
-					cron: '0 0 12 ? * WED'
-				}, {
-					text: '每年三月的星期三的下午2:10和2:44 执行任务		【0 10,44 14 ? 3 WED】',
-					value: 150,
-					cron: '0 10,44 14 ? 3 WED'
-				}, {
-					text: '周一至周五的上午10:15 执行任务		【0 15 10 ? * MON-FRI】',
-					value: 160,
-					cron: '0 15 10 ? * MON-FRI'
-				}, {
-					text: '每月的最后一个星期五上午10:15 执行任务		【0 15 10 ? * 6L】',
-					value: 170,
-					cron: '0 15 10 ? * 6L'
-				}, {
-					text: '每月的第三个星期五上午10:15 执行任务		【0 15 10 ? * 6#3】',
-					value: 180,
-					cron: '0 15 10 ? * 6#3'
-				}],
-				nextPageStrategy: [{
-					text: '递增页号',
-					value: 10
-				}, {
-					text: '指针顺取',
-					value: 20
-				}],
-				// 重试策略
-				retryStrategy: [{
-						text: "无限重试",
-						value: -1
-					},
-					{
-						text: "重试 n 次",
-						value: 10
-					},
-					{
-						text: "当日内（次日00:00前）",
-						value: 20
-					},
-					{
-						text: " n 日内",
-						value: 30
-					},
-					{
-						text: "本月内（次月01 00:00前）",
-						value: 40
-					},
-					{
-						text: " n 月内",
-						value: 50
-					},
-					{
-						text: "本季度内（下季度(04/07/10/01).01 00:00前）",
-						value: 60
-					},
-					{
-						text: " n 季度内",
-						value: 70
-					},
-					{
-						text: "本年内（次年01.01 00:00前）",
-						value: 80
-					},
-					{
-						text: " n 年内",
-						value: 90
-					}
-				],
 				// 预先提醒-重试暂停
-				preRemind: [{
-						value: 0,
-						text: "编程",
-						children: {}
-					},
-					{
-						value: 1,
-						text: "绘画"
-					},
-					{
-						value: 2,
-						text: "运动"
-					},
-				],
+				
 				// 表单数据
 				alignmentFormData: {
 					name: '',
 					age: '',
 				},
-				// 多选数据源
-				hobbys: [{
-					text: '跑步',
-					value: 0
-				}, {
-					text: '游泳',
-					value: 1
-				}, {
-					text: '绘画',
-					value: 2
-				}, {
-					text: '足球',
-					value: 3
-				}, {
-					text: '篮球',
-					value: 4
-				}, {
-					text: '其他',
-					value: 5
-				}],
+				
 				// 分段器数据
 				current: 0,
 				items: ['左对齐', '顶部对齐'],
@@ -778,22 +533,34 @@
 				return 'left'
 			}
 		},
-		onLoad() {
+		onLoad(options) {
+			console.log("传递了参数：" + options.id)
+			if(options.id) this.onLoadData(options.id)
 			// this.getData(1)
 			// 取指定数量 的显示隐藏 设置
 			let selectVal = this.baseFormData.limit
-			if (selectVal == 0) {
-				this.pageCondition.disabled = false
-				this.pageCondition.open = true
-			} else {
-				this.pageCondition.disabled = true
-				this.pageCondition.open = false
-			}
-
-			// dataContentField: 'content.list'
+			this.pageConditionShowHidden(selectVal)
 		},
 		onReady() {},
 		methods: {
+			onLoadData(id){
+				// 发送GET请求
+				var url = "http://localhost:8088/overpass/service-bridge/interface/findById?interfaceId="+id
+				uni.request({
+					url: url, // 你的后端API地址
+					method: 'GET',
+					success: (res) => {
+						console.log('GET请求成功：', res.data.data);
+						// Object.assign(target, ...source objects); 此方法用于将一个或多个源对象复制到目标对象。
+						// 因为它在源上使用“ get”，在目标上使用“ Set”，所以它会调用getter和setter。
+						// 它返回目标对象，该对象具有从目标对象复制的属性和值。此方法不会抛出空值或未定义的源值。
+						Object.assign(this.baseFormData, res.data.data);						
+					},
+					fail: (err) => {
+						console.error('GET请求失败：', err);
+					}
+				});
+			},
 			switchChange() {
 				console.log("单选调整……")
 			},
@@ -869,35 +636,6 @@
 				let index = this.baseFormData.dynamicTable.groupMergeField.array.findIndex(v => v.id === id)
 				this.baseFormData.dynamicTable.groupMergeField.array.splice(index, 1)
 			},
-			submit(ref) {
-				console.log("数据", JSON.stringify(this.baseFormData));
-				// console.log("form", JSON.stringify(this.form));
-				this.$refs[ref].validate().then(res => {
-					console.log('success', res);
-					uni.showToast({
-						title: `校验通过`
-					})
-					// this.onSubmit(ref)
-					uni.request({
-						url: 'http://localhost:8088/overpass/service-bridge/manage',
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json'
-						},
-						data: {
-							"baseFormData": JSON.stringify(this.baseFormData)
-						},
-						success: (res) => {
-							console.log('提交成功', res);
-						},
-						fail: (err) => {
-							console.error('提交失败', err);
-						}
-					});
-				}).catch(err => {
-					console.log('err', err);
-				})
-			},
 			confirm() {},
 			// 打开窗口
 			showDrawer(e) {
@@ -916,25 +654,28 @@
 					this.jsonDataVolid();
 				}
 			},
+			// 取值的时间限制范围
 			paramTimeListChange(e, index) {
 				const selectVal = e.detail.value[0].value
 				console.log("e.detail.value:", selectVal)
 				console.log("index:", index)
 				if (index == undefined) {
+					// 固定的 "时间字段"
 					if (selectVal == 30 || selectVal == 50 || selectVal == 70 || selectVal == 90 || selectVal == 110) {
 						// 选中了 “取指定数量” ，需要指定数量
-						this.numberBoxProps.paramTime.color = "#000",
-							this.numberBoxProps.paramTime.disabled = false
+						this.numberBoxProps.paramTime.color = "#000"
+						this.numberBoxProps.paramTime.disabled = false
 						this.baseFormData.paramTime = selectVal
 					} else {
 						this.numberBoxProps.paramTime.color = "#fff"
 						this.numberBoxProps.paramTime.disabled = true
 					}
 				} else {
+					// 动态增加的 "时间字段"
 					if (selectVal == 30 || selectVal == 50 || selectVal == 70 || selectVal == 90 || selectVal == 110) {
 						// 选中了 “取指定数量” ，需要指定数量
-						this.numberBoxProps.paramTimes[index].color = "#000",
-							this.numberBoxProps.paramTimes[index].disabled = false
+						this.numberBoxProps.paramTimes[index].color = "#000"
+						this.numberBoxProps.paramTimes[index].disabled = false
 						this.baseFormData.paramTimes[index] = selectVal
 					} else {
 						this.numberBoxProps.paramTimes[index].color = "#fff"
@@ -942,7 +683,7 @@
 					}
 				}
 
-			},
+			},			
 			// 取值范围
 			dataLimitChange(e) {
 				const selectVal = e.detail.value
@@ -952,21 +693,15 @@
 					this.baseFormData.limit = selectVal
 				} else {
 					// 选中了 “取指定数量” ，需要指定数量
-					this.numberBoxProps.limit.color = "#000",
-						this.numberBoxProps.limit.disabled = false
+					this.numberBoxProps.limit.color = "#000"
+					this.numberBoxProps.limit.disabled = false
 				}
-				if (selectVal == 0) {
-					this.pageCondition.disabled = false
-					this.pageCondition.open = true
-				} else {
-					this.pageCondition.disabled = true
-					this.pageCondition.open = false
-				}
+				this.pageConditionShowHidden(selectVal)
 			},
-			excuteTimeChange(e) {
+			executeTimeChange(e) {
 				// 根据选中的value来查找对应的对象
 				const selectedOption = this.excuteTime.find(option => option.value === e.detail.value[0].value);
-				this.baseFormData.excuteTimeCron = selectedOption.cron
+				this.baseFormData.executeTimeCron = selectedOption.cron
 			},
 			retryStrategyChange(e) {
 				const selectVal = e.detail.value[0].value
@@ -975,8 +710,8 @@
 				if (selectVal == 10 || selectVal == 30 || selectVal == 50 ||
 					selectVal == 70 || selectVal == 90) {
 					// 选中了 带有 n ，需要指定数量
-					this.numberBoxProps.retryStrategy.color = "#000",
-						this.numberBoxProps.retryStrategy.disabled = false
+					this.numberBoxProps.retryStrategy.color = "#000"
+					this.numberBoxProps.retryStrategy.disabled = false
 				} else {
 					this.numberBoxProps.retryStrategy.color = "#fff"
 					this.numberBoxProps.retryStrategy.disabled = true
@@ -1178,9 +913,6 @@
 			isSingleValue(value) {
 				return typeof value !== 'object' && !Array.isArray(value);
 			},
-
-
-
 			messageToggle(type, msg) {
 				this.toggleMessage.msgType = type
 				this.toggleMessage.messageText = msg
@@ -1205,12 +937,20 @@
 				this.messageToggle('error', msg + '未通过，请核查！')
 				return false
 			},
-
-			request(method) {
+			pageConditionShowHidden(selectVal){
+				if (selectVal == 0) {
+					this.pageCondition.disabled = false
+					this.pageCondition.open = true
+				} else {
+					this.pageCondition.disabled = true
+					this.pageCondition.open = false
+				}
+			},
+			request(method, url) {
 				if (method == 'GET') {
 					// 发送GET请求
 					uni.request({
-						url: '', // 你的后端API地址
+						url: url, // 你的后端API地址
 						method: 'GET',
 						success: (res) => {
 							console.log('GET请求成功：', res.data);
@@ -1240,14 +980,42 @@
 					});
 				}
 			},
-
+			submit(ref) {
+				console.log("数据", JSON.stringify(this.baseFormData));
+				// console.log("form", JSON.stringify(this.form));
+				this.$refs[ref].validate().then(res => {
+					console.log('success', res);
+					uni.showToast({
+						title: `校验通过`
+					})
+					// this.onSubmit(ref)
+					uni.request({
+						url: 'http://localhost:8088/overpass/service-bridge/interface/update',
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						data: {
+							"baseFormData": JSON.stringify(this.baseFormData)
+						},
+						success: (res) => {
+							console.log('提交成功', res);
+						},
+						fail: (err) => {
+							console.error('提交失败', err);
+						}
+					});
+				}).catch(err => {
+					console.log('err', err);
+				})
+			},
 			onSubmit(event) {
 				// event.preventDefault(); // 阻止表单默认提交行为
 				console.log('提交的数据：', this.form);
 				// 这里可以执行提交表单的逻辑，比如发送请求到服务器
 				// 例如使用uni.request提交数据
 				uni.request({
-					url: 'http://localhost:8088/overpass/service-bridge/manage',
+					url: 'http://localhost:8088/overpass/service-bridge/interface/update',
 					method: 'POST',
 					data: uni.stringifyQuery({
 						prompt: JSON.stringify(this.form)
