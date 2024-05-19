@@ -37,22 +37,6 @@
 							</uni-forms-item>
 
 							<uni-forms :rules="dynamicRules" :model="dynamicFormData" labelWidth="68px">
-								<uni-forms-item label="时间字段" name="email">
-									<view class="form-item">
-										<uni-easyinput v-model="baseFormData.dynamicTable.timeField.one.field"
-											placeholder="请输入时间字段" />
-										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.one.opt"
-											:localdata="opts" @change="dataContentFieldChange" popup-title="选取连接方式"
-											:ellipsis="false" style="width: 80px; flex: none;"></uni-data-picker>
-										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.one.time"
-											:localdata="paramTimeList" @change="paramTimeListChange" popup-title="选取时间点"
-											:ellipsis="false"></uni-data-picker>
-										<uni-number-box :min="1" :max="1000"
-											:value="baseFormData.dynamicTable.timeField.one.second" style="float: left;"
-											:color="numberBoxProps.paramTime.color"
-											:disabled="numberBoxProps.paramTime.disabled" width="60" />
-									</view>
-								</uni-forms-item>
 
 								<uni-forms-item v-for="(item,index) in baseFormData.dynamicTable.timeField.array"
 									:key="item.id" :label="item.label" :rules="item.rules"
@@ -67,7 +51,7 @@
 											:localdata="paramTimeList" @change="paramTimeListChange($event, index)"
 											popup-title="选取时间点" :ellipsis="false"></uni-data-picker>
 										<uni-number-box :min="1" :max="1000"
-											:value="baseFormData.dynamicTable.timeField.array[index].second"
+											v-model="baseFormData.dynamicTable.timeField.array[index].second"
 											style="float: left;" :color="numberBoxProps.paramTimes[index].color"
 											:disabled="numberBoxProps.paramTimes[index].disabled" width="60" />
 										<button class="button" size="mini" type="default"
@@ -108,7 +92,7 @@
 											</view>
 
 											<view class="uni-textarea">
-												<textarea v-model="localObj.introduction"
+												<textarea v-model="baseFormData.introduction"
 													placeholder-style="color:#F76260" placeholder="接口返回的数据结构"
 													maxlength="5000" />
 											</view>
@@ -130,12 +114,12 @@
 							</view>
 						</uni-section>
 						<uni-section title="展示" type="line">
-							<uni-easyinput type="textarea" v-model="localObj.respConstructor" disabled="false"
+							<uni-easyinput type="textarea" v-model="baseFormData.respConstructor" disabled="false"
 								maxlength="5000" />
 						</uni-section>
 						<uni-section title="解析结构" type="line">
 							<uni-easyinput class="respExplained" auto-height="true" type="textarea"
-								v-html="localObj.respExplainedStr" disabled="false" maxlength="5000" />
+								v-html="baseFormData.respExplainedStr" disabled="false" maxlength="5000" />
 						</uni-section>
 
 						<view class="uni-container" style="margin-top: 20px;">
@@ -146,7 +130,7 @@
 									<uni-th align="center">字段</uni-th>
 									<uni-th width="4" align="center">重命名</uni-th>
 								</uni-tr>
-								<uni-tr v-for="(entry, index) in localObj.respExplainedFormat" :key="index+1">
+								<uni-tr v-for="(entry, index) in baseFormData.respExplainedFormat" :key="index+1">
 									<uni-td align="left">{{ index+1 }}</uni-td>
 									<uni-td>
 										<view class="name">{{ entry[0] }}</view>
@@ -164,7 +148,7 @@
 						<view>
 							<uni-data-checkbox v-model="baseFormData.limit" @change="dataLimitChange"
 								:localdata="dataLength" style="float: left;" />
-							<uni-number-box :min="0" :max="100000000" :value="baseFormData.limitNum"
+							<uni-number-box :min="0" :max="100000000" v-model="baseFormData.limitNum"
 								style="float: left;" :color="numberBoxProps.limit.color"
 								:disabled="numberBoxProps.limit.disabled" width="120" />
 						</view>
@@ -293,7 +277,7 @@
 						<uni-number-box :min="0" :max="100000000" :value="baseFormData.retryStrategyTimes" style="float: left; " :color="numberBoxProps.retryStrategy.color" :disabled="numberBoxProps.retryStrategy.disabled"  width="120" />
 					</uni-forms-item> -->
 
-					<uni-forms-item label="管理">
+					<uni-forms-item label="管理" v-if="baseFormData.id>0">
 
 						<view class="button-group">
 							<button type="primary" size="mini" @click="add">放弃</button>
@@ -326,6 +310,7 @@
 	import * as util from '../../../common/util.js'
 	// import {dataLength,mergeStyles,paramTimeList,opts} from '../../../common_data/interface_data.js'
 	import * as base from '../../../common_data/interface_data.js'
+	// import {onLoadData} from './interface.js'
 
 	export default {
 		created() {
@@ -351,7 +336,6 @@
 					name: '',
 					url: '',
 					method: 'POST',
-					respExplainedJsonStr: '',
 					limit: 0,
 					limitNum: 0,
 					nextPageField: '',
@@ -360,7 +344,13 @@
 					statusField: '',
 					filterCondition: '',
 					dataContentField: '',
-					// hobby: [5],
+					
+					introduction: '',
+					respConstructor: '',
+					respExplainedStr: '',
+					respExplainedJsonStr: '',
+					respExplainedFormat: {},
+					
 					datetimesingle: 1627529992399,
 					executeTimeExample: 70,
 					executeTimeCron: "0 15 10 ? * *",
@@ -373,7 +363,8 @@
 							one: {
 								opt: 0,
 								time: 0,
-								field: ''
+								field: '',
+								second:0
 							},
 							array: []
 							// array: [{id: 2, label: '时间字段', opt:2, time:1, field:'',
@@ -390,7 +381,9 @@
 							array: []
 							// array: [{id: 2, label: '分组字段', opt:2, time:1, groupField:'', mergeField:''}]
 						},
-					}
+					},
+					paramTime:{time:0},
+					paramTimes:[]
 				}, 
 				simpleFields: [],
 				// 输入框-提示信息
@@ -419,10 +412,9 @@
 						color: "#fff",
 						disabled: true,
 					},
-					paramTimes: [{
-						color: "#fff",
-						disabled: true,
-					}],
+					paramTimes: [
+						// {color: "#fff",disabled: true},
+					],
 					limit: {
 						color: "#fff",
 						disabled: true,
@@ -537,9 +529,6 @@
 			console.log("传递了参数：" + options.id)
 			if(options.id) this.onLoadData(options.id)
 			// this.getData(1)
-			// 取指定数量 的显示隐藏 设置
-			let selectVal = this.baseFormData.limit
-			this.pageConditionShowHidden(selectVal)
 		},
 		onReady() {},
 		methods: {
@@ -549,17 +538,43 @@
 				uni.request({
 					url: url, // 你的后端API地址
 					method: 'GET',
+					async: false, // 设置为同步请求
 					success: (res) => {
 						console.log('GET请求成功：', res.data.data);
 						// Object.assign(target, ...source objects); 此方法用于将一个或多个源对象复制到目标对象。
 						// 因为它在源上使用“ get”，在目标上使用“ Set”，所以它会调用getter和setter。
 						// 它返回目标对象，该对象具有从目标对象复制的属性和值。此方法不会抛出空值或未定义的源值。
-						Object.assign(this.baseFormData, res.data.data);						
+						Object.assign(this.baseFormData, res.data.data);
+						// 数据加载后，回显
+						this.onloadDataAfterReshow()						
 					},
 					fail: (err) => {
 						console.error('GET请求失败：', err);
 					}
 				});
+			},
+			// 加载后数据回显
+			onloadDataAfterReshow(){
+				// 取指定数量 的显示隐藏 设置
+				this.pageConditionShowHidden(this.baseFormData.limit)
+				// 回显json数据解析表格
+				this.jsonDataVolid(true);
+				
+				// 回显时间字段表格
+				var timeFieldArray = this.baseFormData.dynamicTable.timeField.array
+				if(timeFieldArray.length>0){
+					timeFieldArray.forEach((item, index)=>{
+						// 添加数字输入框，默认值，占位
+						this.numberBoxProps.paramTimes.push({
+							color: "#fff",
+							disabled: true
+						})
+						// 依据实际数据，重新赋值
+						this.paramTimeStyleChange(item.time, index)
+					})
+				}
+				// 回显 取值范围
+				this.dataLimitStyleChange(this.baseFormData.limit)
 			},
 			switchChange() {
 				console.log("单选调整……")
@@ -577,7 +592,7 @@
 				// uni.hideLoading()
 				console.log("修后的val:", val)
 				this.fieldCheck.repeatFieldSet
-				this.localObj.respExplainedFormat.set(this.rename.key, val)
+				this.baseFormData.respExplainedFormat.set(this.rename.key, val)
 				// 关闭窗口后，恢复默认内容
 				this.$refs.inputDialog.close()
 			},
@@ -604,6 +619,7 @@
 					opt: 0,
 					time: 0,
 					field: '',
+					second: 0,
 					rules: [{
 						'required': true,
 						errorMessage: '域名项必填'
@@ -657,7 +673,10 @@
 			// 取值的时间限制范围
 			paramTimeListChange(e, index) {
 				const selectVal = e.detail.value[0].value
-				console.log("e.detail.value:", selectVal)
+				this.paramTimeStyleChange(selectVal, index)
+			},
+			paramTimeStyleChange(selectVal, index){
+				console.log("selectVal:", selectVal)
 				console.log("index:", index)
 				if (index == undefined) {
 					// 固定的 "时间字段"
@@ -665,28 +684,31 @@
 						// 选中了 “取指定数量” ，需要指定数量
 						this.numberBoxProps.paramTime.color = "#000"
 						this.numberBoxProps.paramTime.disabled = false
-						this.baseFormData.paramTime = selectVal
+						this.baseFormData.paramTime.time = selectVal
 					} else {
 						this.numberBoxProps.paramTime.color = "#fff"
 						this.numberBoxProps.paramTime.disabled = true
 					}
-				} else {
-					// 动态增加的 "时间字段"
-					if (selectVal == 30 || selectVal == 50 || selectVal == 70 || selectVal == 90 || selectVal == 110) {
-						// 选中了 “取指定数量” ，需要指定数量
-						this.numberBoxProps.paramTimes[index].color = "#000"
-						this.numberBoxProps.paramTimes[index].disabled = false
-						this.baseFormData.paramTimes[index] = selectVal
-					} else {
-						this.numberBoxProps.paramTimes[index].color = "#fff"
-						this.numberBoxProps.paramTimes[index].disabled = true
-					}
+					return
 				}
-
-			},			
+				console.log("index typeof:",typeof  index)
+				// 动态增加的 "时间字段"
+				if (selectVal == 30 || selectVal == 50 || selectVal == 70 || selectVal == 90 || selectVal == 110) {
+					// 选中了 “取指定数量” ，需要指定数量
+					this.numberBoxProps.paramTimes[index].color = "#000"
+					this.numberBoxProps.paramTimes[index].disabled = false
+					this.baseFormData.paramTimes[index].time = selectVal
+				} else {
+					this.numberBoxProps.paramTimes[index].color = "#fff"
+					this.numberBoxProps.paramTimes[index].disabled = true
+				}
+			},
 			// 取值范围
 			dataLimitChange(e) {
 				const selectVal = e.detail.value
+				this.dataLimitStyleChange(selectVal)
+			},
+			dataLimitStyleChange(selectVal){
 				if (selectVal == 0 || selectVal == 1) {
 					this.numberBoxProps.limit.color = "#fff"
 					this.numberBoxProps.limit.disabled = true
@@ -730,25 +752,24 @@
 				this.$forceUpdate() // 强制组件重新渲染
 				console.log('e:', selectVal);
 			},
-			jsonDataVolid() {
+			jsonDataVolid(reShow) {
 				const msg = "JSON 格式检查："
 				this.dataContentFields = [] // 清空，待结构识别后，重新设置
-				if (this.checkJSON(this.localObj.introduction)) {
-					this.messageToggle('success', msg + '通过！')
-					this.localObj.respConstructor = this.localObj.introduction
+				if (this.checkJSON(this.baseFormData.introduction)) {
+					if(!reShow) this.messageToggle('success', msg + '通过！')
+					this.baseFormData.respConstructor = this.baseFormData.introduction
 					// 手动增加一条全取选项
 					this.dataContentFields.push({
 						text: '全取',
 						value: ''
 					})
 					// 数据字段没回显时，默认选中第一个
-					if (!this.baseFormData.dataContentField) this.baseFormData.dataContentField = this.dataContentFields[0]
-						.value
+					if (!this.baseFormData.dataContentField) this.baseFormData.dataContentField = this.dataContentFields[0].value
 
 					return // 成功，结束
 				}
 				// 失败
-				this.messageToggle('error', msg + '未通过，请核查！')
+				if(!reShow) this.messageToggle('error', msg + '未通过，请核查！')
 			},
 			//JSON.stringify()
 			//JSON.parse
@@ -759,9 +780,16 @@
 					this.dataVolid.respJsonFormat = true
 					console.log('json格式检查：通过 ' + this.dataVolid.respJsonFormat)
 					const respExplainedMap = this.explainRspJsonToMap(respJSON)
-					this.localObj.respExplainedStr = this.mapToStyleStr(respExplainedMap)
-					this.localObj.respExplainedFormat = this.mapReverse(respExplainedMap)
-					this.baseFormData.respExplainedJsonStr = JSON.stringify(Object.fromEntries(this.localObj.respExplainedFormat))
+					// this.localObj.respExplainedStr = this.mapToStyleStr(respExplainedMap)
+					// this.localObj.respExplainedFormat = this.mapReverse(respExplainedMap)
+					var list = []
+					this.baseFormData.respExplainedStr = this.mapToStyleStr(respExplainedMap)
+					console.log('step1：通过 ')
+					this.baseFormData.respExplainedFormat = this.mapReverse(respExplainedMap)
+					// this.baseFormData.respExplainedFormat = this.mapReverseAndToArray(list, respExplainedMap)
+					console.log('step2：通过 ')
+					// this.baseFormData.respExplainedJsonStr = JSON.stringify(Object.fromEntries(this.baseFormData.respExplainedFormat))
+					this.baseFormData.respExplainedJsonStr = JSON.stringify(this.baseFormData.respExplainedFormat)
 					return true
 				} catch (e) {
 					// 不是严格的 JSON 格式
@@ -785,11 +813,24 @@
 			// map数据进行逆序
 			mapReverse(map) {
 				// 将Map转换为数组
-				let mapArray = Array.from(map);
+				const mapArray = Array.from(map);
 				// 逆序数组
 				mapArray.reverse();
 				// 将逆序后的数组转换回Map
+				// const newMap = new Map(mapArray);
+				// var rest = []
+				// newMap.forEach(e=>rest.push({"key": e[0],"value": e[1]}))
+				
 				return new Map(mapArray);
+			},
+			mapReverseAndToArray(list, map){
+				// 将Map转换为数组
+				const mapArray = Array.from(map);
+				// 逆序数组
+				mapArray.reverse();
+				for (const [key, value] of new Map(mapArray)) {
+					list.push({"key": key, "value": value})
+				}
 			},
 			mapToStyleStr(map) {
 				// let html = '<span style="border: 1px solid #DCDFE6; border-radius: 4px;width:100%;hight:100%;">'
@@ -982,13 +1023,13 @@
 			},
 			submit(ref) {
 				console.log("数据", JSON.stringify(this.baseFormData));
-				// console.log("form", JSON.stringify(this.form));
+				console.log("this.baseFormData.respExplainedFormat: ", JSON.stringify(this.baseFormData.respExplainedFormat));
 				this.$refs[ref].validate().then(res => {
 					console.log('success', res);
 					uni.showToast({
 						title: `校验通过`
 					})
-					// this.onSubmit(ref)
+					
 					uni.request({
 						url: 'http://localhost:8088/overpass/service-bridge/interface/update',
 						method: 'POST',
@@ -1008,25 +1049,6 @@
 				}).catch(err => {
 					console.log('err', err);
 				})
-			},
-			onSubmit(event) {
-				// event.preventDefault(); // 阻止表单默认提交行为
-				console.log('提交的数据：', this.form);
-				// 这里可以执行提交表单的逻辑，比如发送请求到服务器
-				// 例如使用uni.request提交数据
-				uni.request({
-					url: 'http://localhost:8088/overpass/service-bridge/interface/update',
-					method: 'POST',
-					data: uni.stringifyQuery({
-						prompt: JSON.stringify(this.form)
-					}),
-					success: (res) => {
-						console.log('提交成功', res);
-					},
-					fail: (err) => {
-						console.error('提交失败', err);
-					}
-				});
 			},
 
 			// 获取数据
