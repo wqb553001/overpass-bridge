@@ -45,7 +45,7 @@
 										<uni-easyinput v-model="baseFormData.dynamicTable.timeField.array[index].field"
 											placeholder="请输入时间字段" />
 										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.array[index].opt"
-											:localdata="opts" @change="dataContentFieldChange" popup-title="选取连接方式"
+											:localdata="opts" popup-title="选取连接方式"
 											:ellipsis="false" style="width: 80px; flex: none;"></uni-data-picker>
 										<uni-data-picker v-model="baseFormData.dynamicTable.timeField.array[index].time"
 											:localdata="paramTimeList" @change="paramTimeListChange($event, index)"
@@ -118,30 +118,35 @@
 								maxlength="5000" />
 						</uni-section>
 						<uni-section title="解析结构" type="line">
-							<uni-easyinput class="respExplained" auto-height="true" type="textarea"
-								v-html="baseFormData.respExplainedStr" disabled="false" maxlength="5000" />
+							<uni-easyinput auto-height="true" type="textarea" v-html="baseFormData.respExplainedStr" disabled="false" maxlength="5000" />
+							<view class="uni-container" style="margin-top: 20px;">
+								<uni-table ref="table" :loading="loading" border stripe emptyText="暂无更多数据">
+									<uni-tr>
+										<uni-th width="4" align="center">序号</uni-th>
+										<uni-th width="40" align="center">层级</uni-th>
+										<uni-th align="center">字段</uni-th>
+										<uni-th width="4" align="center">重命名</uni-th>
+									</uni-tr>
+									<uni-tr v-for="(entry, index) in baseFormData.respExplainedFormat" :key="index+1">
+										<uni-td align="left">{{ index+1 }}</uni-td>
+										<uni-td>
+											<view class="name">{{ entry[0] }}</view>
+										</uni-td>
+										<uni-td align="left">
+											<uni-easyinput auto-height="true" type="textarea"
+												v-html="entry[1][0]" disabled="false" maxlength="5000" />
+										</uni-td>
+										<uni-td> 
+											<button class="button" size="mini" type="primary"
+												@tap="inputDialogToggle(entry[0], entry[1][1])"
+												style="margin-left: -1px; ">修改</button> 
+										</uni-td>
+									</uni-tr>
+								</uni-table>
+							</view>	
 						</uni-section>
 
-						<view class="uni-container" style="margin-top: 20px;">
-							<uni-table ref="table" :loading="loading" border stripe emptyText="暂无更多数据">
-								<uni-tr>
-									<uni-th width="4" align="center">序号</uni-th>
-									<uni-th width="40" align="center">层级</uni-th>
-									<uni-th align="center">字段</uni-th>
-									<uni-th width="4" align="center">重命名</uni-th>
-								</uni-tr>
-								<uni-tr v-for="(entry, index) in baseFormData.respExplainedFormat" :key="index+1">
-									<uni-td align="left">{{ index+1 }}</uni-td>
-									<uni-td>
-										<view class="name">{{ entry[0] }}</view>
-									</uni-td>
-									<uni-td align="left">{{ entry[1] }}</uni-td>
-									<uni-td> <button class="button" size="mini" type="primary"
-											@tap="inputDialogToggle(entry[0], entry[1])"
-											style="margin-left: -1px; ">修改</button> </uni-td>
-								</uni-tr>
-							</uni-table>
-						</view>
+						
 					</uni-forms-item>
 
 					<uni-forms-item label="取值范围" required>
@@ -177,7 +182,7 @@
 										</uni-forms-item>
 										<uni-forms-item label="结果集" required>
 											<uni-data-picker v-model="baseFormData.dataContentField"
-												:localdata="dataContentFields" @change="dataContentFieldChange"
+												:localdata="dataContentFields"
 												popup-title="选取结果集字段" :ellipsis="false"></uni-data-picker>
 										</uni-forms-item>
 										<uni-forms-item label="下一页" required>
@@ -310,6 +315,7 @@
 	import * as util from '../../../common/util.js'
 	// import {dataLength,mergeStyles,paramTimeList,opts} from '../../../common_data/interface_data.js'
 	import * as base from '../../../common_data/interface_data.js'
+	// import {dataLength,mergeStyles,paramTimeList,opts,retryStrategy,executeTime,nextPageStrategy,reqMethod} from '../../../common_data/interface_data.js'
 	// import {onLoadData} from './interface.js'
 
 	export default {
@@ -323,6 +329,16 @@
 			this.executeTime = base.executeTime
 			this.nextPageStrategy = base.nextPageStrategy
 			this.reqMethod = base.reqMethod
+			
+			// this.dataLength = dataLength
+			// this.mergeStyles = mergeStyles
+			// this.paramTimeList = paramTimeList
+			// this.opts = opts
+			
+			// this.retryStrategy = retryStrategy
+			// this.executeTime = executeTime
+			// this.nextPageStrategy = nextPageStrategy
+			// this.reqMethod = reqMethod
 			
 		},
 		data() {
@@ -391,11 +407,13 @@
 					nextPageField: '请输入下一页取值条件 如 page:#page + 1|page'
 				},
 				pageCondition: {
-					disabled: true,
-					open: false
+					disabled: false,
+					open: true
 				},
 				fieldCheck: {
-					repeatFieldSet: new Set()
+					respExplainedMap: new Map(),
+					repeatFieldMap: new Map(),
+					allFieldMap: new Map()
 				},
 				// 重命名字段弹出框
 				rename: {
@@ -434,7 +452,6 @@
 					respExplainedStr: '',
 					respExplainedFormat: {}
 				},
-
 				// 提示信息弹窗 -begin --<<--
 				toggleMessage: {
 					type: 'center',
@@ -557,8 +574,10 @@
 			onloadDataAfterReshow(){
 				// 取指定数量 的显示隐藏 设置
 				this.pageConditionShowHidden(this.baseFormData.limit)
+				
 				// 回显json数据解析表格
-				this.jsonDataVolid(true);
+				const respExplainedMap = this.styleStrToMap(this.baseFormData.respExplainedStr)
+				this.baseFormData.respExplainedFormat = this.mapValueRed(respExplainedMap)
 				
 				// 回显时间字段表格
 				var timeFieldArray = this.baseFormData.dynamicTable.timeField.array
@@ -590,11 +609,68 @@
 			},
 			dialogInputConfirm(val) {
 				// uni.hideLoading()
-				console.log("修后的val:", val)
-				this.fieldCheck.repeatFieldSet
-				this.baseFormData.respExplainedFormat.set(this.rename.key, val)
 				// 关闭窗口后，恢复默认内容
 				this.$refs.inputDialog.close()
+				console.log("修后的val:", val)
+				var arr = val.split(",")
+				let str = '';
+				var after,before
+				for (let e of arr) {
+					if(e.includes("=")){
+						before=e.substring(0, e.indexOf("="))
+						after=e.substring(e.indexOf("=")+1)
+						this.judgeRepeatChangeFields(after, before)
+					}
+				}
+				
+				this.baseFormData.respExplainedFormat.set(this.rename.key, [this.signColorForFieldToRed(val), val])
+				this.fieldCheck.respExplainedMap.set(this.rename.key, val)
+				this.renameAfter()
+			},
+			
+			renameAfter(){
+				const respExplainedMap = this.fieldCheck.respExplainedMap
+				this.baseFormData.respExplainedStr = this.mapToStyleStr(respExplainedMap)
+				this.baseFormData.respExplainedFormat = this.mapValueRed(this.mapReverse(respExplainedMap))
+			},
+			
+			judgeRepeatChangeFields(newField, oldField){
+				// 字段集
+				if(this.fieldCheck.allFieldMap.has(newField)) {
+					// 重命名后的字段，与现有字段名重复
+					this.fieldCheck.allFieldMap.set(newField, this.fieldCheck.allFieldMap.get(newField) + 1)
+					// 检查是否在‘重复集’中
+					if (this.fieldCheck.repeatFieldMap.has(newField)) {
+						this.fieldCheck.repeatFieldMap.set(newField, this.fieldCheck.repeatFieldMap.get(newField) + 1)
+					}else{
+						this.fieldCheck.repeatFieldMap.set(newField, 1)
+					}
+				}else{
+					// 重命名后的字段，不重复于现有字段名
+					this.fieldCheck.allFieldMap.set(newField, 1)
+					
+					if(this.fieldCheck.allFieldMap.has(oldField)){
+						if(this.fieldCheck.allFieldMap.get(oldField)==1){
+							// 之前标记有一处重复，重命名后，删除标记
+							this.fieldCheck.allFieldMap.delete(oldField)
+						}else{
+							// 之前标记有多处重复，重命名后，标记 重复数-1
+							this.fieldCheck.allFieldMap.set(oldField, this.fieldCheck.allFieldMap.get(oldField) - 1)
+						}
+					}
+				}
+				
+				// 重复集(存在于 ‘重复集’中，必定存在于‘字段集’中；换句话说，不存在于‘字段集’中，更不可能存在于‘重复集’中)
+				if(this.fieldCheck.repeatFieldMap.has(oldField)){
+					if(this.fieldCheck.repeatFieldMap.get(oldField)==1){
+						// 之前标记有一处重复，重命名后，删除标记
+						this.fieldCheck.repeatFieldMap.delete(oldField)
+					}else{
+						// 之前标记有多处重复，重命名后，标记 重复数-1
+						this.fieldCheck.repeatFieldMap.set(oldField, this.fieldCheck.repeatFieldMap.get(oldField) - 1)
+					}
+				}
+				
 			},
 			update(item) {
 				this.show = true
@@ -607,10 +683,7 @@
 				// 弹窗操作，用户输入新数据后更新item
 				this.$set(this.table.tableData, index, item); // 更新数组并触发视图更新
 			},
-			onClickItem(e) {
-				console.log(e);
-				this.current = e.currentIndex
-			},
+			
 			addDynamicTableTimeField() {
 				// 添加字段输入框
 				this.baseFormData.dynamicTable.timeField.array.push({
@@ -722,7 +795,7 @@
 			},
 			executeTimeChange(e) {
 				// 根据选中的value来查找对应的对象
-				const selectedOption = this.excuteTime.find(option => option.value === e.detail.value[0].value);
+				const selectedOption = this.executeTime.find(option => option.value === e.detail.value[0].value);
 				this.baseFormData.executeTimeCron = selectedOption.cron
 			},
 			retryStrategyChange(e) {
@@ -752,11 +825,11 @@
 				this.$forceUpdate() // 强制组件重新渲染
 				console.log('e:', selectVal);
 			},
-			jsonDataVolid(reShow) {
+			jsonDataVolid() {
 				const msg = "JSON 格式检查："
 				this.dataContentFields = [] // 清空，待结构识别后，重新设置
 				if (this.checkJSON(this.baseFormData.introduction)) {
-					if(!reShow) this.messageToggle('success', msg + '通过！')
+					this.messageToggle('success', msg + '通过！')
 					this.baseFormData.respConstructor = this.baseFormData.introduction
 					// 手动增加一条全取选项
 					this.dataContentFields.push({
@@ -769,8 +842,9 @@
 					return // 成功，结束
 				}
 				// 失败
-				if(!reShow) this.messageToggle('error', msg + '未通过，请核查！')
+				this.messageToggle('error', msg + '未通过，请核查！')
 			},
+			
 			//JSON.stringify()
 			//JSON.parse
 			checkJSON(x) {
@@ -779,14 +853,13 @@
 					const respJSON = JSON.parse(x);
 					this.dataVolid.respJsonFormat = true
 					console.log('json格式检查：通过 ' + this.dataVolid.respJsonFormat)
-					const respExplainedMap = this.explainRspJsonToMap(respJSON)
-					// this.localObj.respExplainedStr = this.mapToStyleStr(respExplainedMap)
-					// this.localObj.respExplainedFormat = this.mapReverse(respExplainedMap)
-					var list = []
+					this.explainRspJsonToMap(respJSON)
+					console.log('step0：通过 ')
+					const respExplainedMap = this.fieldCheck.respExplainedMap
 					this.baseFormData.respExplainedStr = this.mapToStyleStr(respExplainedMap)
 					console.log('step1：通过 ')
-					this.baseFormData.respExplainedFormat = this.mapReverse(respExplainedMap)
-					// this.baseFormData.respExplainedFormat = this.mapReverseAndToArray(list, respExplainedMap)
+					this.baseFormData.respExplainedFormat = this.mapValueRed(this.mapReverse(respExplainedMap))
+					
 					console.log('step2：通过 ')
 					// this.baseFormData.respExplainedJsonStr = JSON.stringify(Object.fromEntries(this.baseFormData.respExplainedFormat))
 					this.baseFormData.respExplainedJsonStr = JSON.stringify(this.baseFormData.respExplainedFormat)
@@ -799,16 +872,14 @@
 				}
 			},
 			explainRspJsonToMap(rspJSON) {
-				let respExplainedMap = new Map();
-				const allFieldSet = new Set();
-				const repeatFieldSet = new Set();
+				// let respExplainedMap = new Map();
+				// const allFieldSet = new Set();
+				// const repeatFieldSet = new Set();
 				if (Array.isArray(rspJSON)) {
-					this.handleJSONArray(respExplainedMap, allFieldSet, repeatFieldSet, 0, null, rspJSON);
+					this.handleJSONArray(0, null, rspJSON);
 				} else {
-					this.handleJSON(respExplainedMap, allFieldSet, repeatFieldSet, 0, null, rspJSON);
+					this.handleJSON(0, null, rspJSON);
 				}
-				this.fieldCheck.repeatFieldSet = repeatFieldSet
-				return respExplainedMap;
 			},
 			// map数据进行逆序
 			mapReverse(map) {
@@ -817,10 +888,6 @@
 				// 逆序数组
 				mapArray.reverse();
 				// 将逆序后的数组转换回Map
-				// const newMap = new Map(mapArray);
-				// var rest = []
-				// newMap.forEach(e=>rest.push({"key": e[0],"value": e[1]}))
-				
 				return new Map(mapArray);
 			},
 			mapReverseAndToArray(list, map){
@@ -841,10 +908,23 @@
 				// return html + str +"</span>";
 				return str;
 			},
+			styleStrToMap(str) {
+				// 1e: content<br>1s: status,code,msg<br>2a-content: list<br>4s-order: <span style="color:red">orderNo</span>,orderState,memberId<br>
+				let newMap = new Map()
+				str = str.replace(' ','');
+				if(str.includes('<br>')){
+					var arr = str.split('<br>')
+					for (let e of arr) {
+						if(e) newMap.set(e.substring(0, e.indexOf(':')), e.substring(e.indexOf(':')+1))
+					}
+				}
+				
+				return newMap;
+			},
 			mapValueRed(map) {
 				let newMap = new Map()
 				for (const [key, value] of map) {
-					newMap.set(key, this.signColorForFieldToRed(value))
+					newMap.set(key, [this.signColorForFieldToRed(value), value])
 				}
 				return newMap
 			},
@@ -853,8 +933,20 @@
 				var arr = value.split(",")
 				let str = '';
 				for (let e of arr) {
-					if (this.fieldCheck.repeatFieldSet.has(e)) {
-						e = `<span style="color:red">` + e + `</span>`
+					let after = e,before
+					let flag1 = false,flag2 = false
+					if(e.includes("=")){
+						flag1 = true
+						before=e.substring(0, e.indexOf("="))
+						after=e.substring(e.indexOf("=")+1)
+					}
+					
+					if (this.fieldCheck.repeatFieldMap.has(after)) {
+						flag2 = true
+						e = `<span style="color:red">` + after + `</span>`
+					}
+					if(flag1&&flag2){
+						e = before+"="+e
 					}
 					if (str == '') {
 						str += e
@@ -865,15 +957,15 @@
 				return str;
 			},
 
-			handleJSONArray(respExplainedMap, allFieldSet, repeatFieldSet, cycle, parentKey, jsonArray) {
+			handleJSONArray(cycle, parentKey, jsonArray) {
 				// jsonArray.forEach(itemJson => {
-				// 	this.handleJSON(respExplained, allFieldSet, repeatFieldSet, cycle, parentKey, itemJson);
+				// 	this.handleJSON(respExplained, cycle, parentKey, itemJson);
 				// });
 
 				// JSONArray 只取第一个对象进行属性取值
-				this.handleJSON(respExplainedMap, allFieldSet, repeatFieldSet, cycle, parentKey, jsonArray[0]);
+				this.handleJSON(cycle, parentKey, jsonArray[0]);
 			},
-			handleJSON(respExplainedMap, allFieldSet, repeatFieldSet, cycle, parentKey, jsonData) {
+			handleJSON(cycle, parentKey, jsonData) {
 				cycle = cycle + 1;
 				let str = '';
 				let entity = '';
@@ -887,8 +979,11 @@
 					switch (valType) {
 						case util.JsonValueDataTypeEnum.SINGLE_VALUE:
 							// console.log("判断为 singleValue")
-							if (allFieldSet.has(jsonKey)) repeatFieldSet.add(jsonKey)
-							allFieldSet.add(jsonKey)
+							// 收集 所有字段 及 重复字段 
+							this.judgeRepeatAndCollectFields(jsonKey)
+							
+							console.log("检查重复值，结束")
+							
 							if (str == '') {
 								str += jsonKey
 							} else {
@@ -912,7 +1007,7 @@
 								text: jsonKey,
 								value: jsonKey
 							})
-							this.handleJSONArray(respExplainedMap, allFieldSet, repeatFieldSet, cycle, jsonKey, jsonValue);
+							this.handleJSONArray(cycle, jsonKey, jsonValue);
 							break;
 
 						case util.JsonValueDataTypeEnum.JSON_OBJECT:
@@ -922,24 +1017,42 @@
 							} else {
 								entity += (',' + jsonKey)
 							}
-							this.handleJSON(respExplainedMap, allFieldSet, repeatFieldSet, cycle, jsonKey, jsonValue);
+							this.handleJSON(cycle, jsonKey, jsonValue);
 							break;
 					}
 				}
 
 				if (cycle == 1) {
 					// 第一层
-					if (str != '') respExplainedMap.set('1s', str)
-					if (entity != '') respExplainedMap.set('1e', entity)
-					if (array != '') respExplainedMap.set('1a', array)
+					if (str != '') this.fieldCheck.respExplainedMap.set('1s', str)
+					if (entity != '') this.fieldCheck.respExplainedMap.set('1e', entity)
+					if (array != '') this.fieldCheck.respExplainedMap.set('1a', array)
 					// console.log("第一层 结束 respExplainedMap:", Object.fromEntries(Array.from(respExplainedMap)))
 				} else {
-					if (str != '') respExplainedMap.set(cycle + 's-' + parentKey, str)
-					if (entity != '') respExplainedMap.set(cycle + 'e-' + parentKey, entity)
-					if (array != '') respExplainedMap.set(cycle + 'a-' + parentKey, array)
+					if (str != '') this.fieldCheck.respExplainedMap.set(cycle + 's-' + parentKey, str)
+					if (entity != '') this.fieldCheck.respExplainedMap.set(cycle + 'e-' + parentKey, entity)
+					if (array != '') this.fieldCheck.respExplainedMap.set(cycle + 'a-' + parentKey, array)
 					// console.log("第"+cycle+"层 结束 respExplainedMap:", Object.fromEntries(Array.from(respExplainedMap)))
 				}
 
+			},
+			
+			judgeRepeatAndCollectFields(jsonKey){
+				console.log("检查重复值~~~")
+				if(!this.fieldCheck.allFieldMap.has(jsonKey)) {
+					this.fieldCheck.allFieldMap.set(jsonKey, 1)
+					return false
+				}
+				
+				this.fieldCheck.allFieldMap.set(jsonKey, this.fieldCheck.allFieldMap.get(jsonKey) + 1)
+				
+				if (!this.fieldCheck.repeatFieldMap.has(jsonKey)) {
+					this.fieldCheck.repeatFieldMap.set(jsonKey, 1)
+					return true
+				}
+				
+				this.fieldCheck.repeatFieldMap.set(jsonKey, this.fieldCheck.repeatFieldMap.get(jsonKey)+1)
+				return true
 			},
 
 			// json 类型判断

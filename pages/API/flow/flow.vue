@@ -13,7 +13,10 @@
 					<uni-td align="left">{{ index+1 }}</uni-td>
 					<uni-td> <view class="name">{{ item.name }}</view> </uni-td>
 					<uni-td align="left" >{{ index>0?item.relation:'第一个接口，无需配置' }}</uni-td>
-					<uni-td align="left" >{{ item.fields }}</uni-td>
+					<uni-td align="left" >
+						<uni-easyinput class="respExplained" auto-height="true" type="textarea"
+							v-html="item.fields" disabled="false" maxlength="5000" />
+					</uni-td>
 					<uni-td>
 						<view v-if="item.id>0">
 							<uni-icons type="closeempty" size="40" @click="deleteInterface(item)" class="buttonClass" ></uni-icons>
@@ -190,7 +193,7 @@
 					cancelText: '不删了',
 					confirmText: '删除',
 					content: '删除接口配置，将无法恢复！',
-					optId: '',
+					optId: 0,
 					value: ''
 				},
 			};
@@ -252,7 +255,10 @@
 					// 	lastId: 0
 					// })
 				}
+				// 删除指定对象
 				this.asyncDeleteInterface(id)
+				// 更新余下数据（nextId、lastId 发生了变更）
+				this.asyncSubmitInterface(this.baseFormData.respExplainedFormat)
 			},
 			
 			moveUp(e, index){
@@ -288,6 +294,8 @@
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
+				// 更新数据（nextId、lastId 发生了变更）
+				this.asyncSubmitInterface(this.baseFormData.respExplainedFormat)
 			},
 			moveDown(e, index){
 				var list = this.baseFormData.respExplainedFormat
@@ -322,6 +330,8 @@
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
+				// 更新数据（nextId、lastId 发生了变更）
+				this.asyncSubmitInterface(this.baseFormData.respExplainedFormat)
 			},
 			
 			addInterface(id, index) {
@@ -368,6 +378,7 @@
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
+				// 更新整体数据（nextId、lastId 发生了变更）
 				this.asyncSubmitInterface(this.baseFormData.respExplainedFormat)
 				// this.$forceUpdate()
 			},
@@ -463,19 +474,29 @@
 						var e = head
 						nextId = head.nextId
 						// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-						e.name = 'E1001'+'订单数据' + e.id
-						e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
+						// e.name = 'E1001'+'订单数据' + e.id
+						// e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
+						e.fields = e.respExplainedStr
 						list[i] = e
 						continue
 					}					
 					var e = map.get(nextId)
 					nextId = e.nextId
 					// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-					e.name = 'E1001'+'订单数据' + e.id
-					e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
+					// e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
+					e.fields = e.respExplainedStr
 					list[i] = e
 				}
 				console.log("排序结束~~~~~~~~~")
+			},
+			deleteInterface(e) {
+				var list = this.baseFormData.respExplainedFormat
+				if((list.length==1) && (list[0].id == 0)){
+					this.messageToggle('warn', '已全删除！现存的为初始化占位数据。')
+					return
+				}
+				this.alertDialog.optId = e.id
+				this.alertDialogToggle('warn')
 			},
 			
 			// 弹出输入框
@@ -511,15 +532,6 @@
 				this.toggleMessage.msgType = type
 				this.toggleMessage.messageText = msg
 				this.$refs.showMessage.open()
-			},
-			deleteInterface(e) {
-				var list = this.baseFormData.respExplainedFormat
-				if((list.length==1) && (list[0].id == 0)){
-					this.messageToggle('warn', '已全删除！现存的为初始化占位数据。')
-					return
-				}
-				this.alertDialog.optId = e.id
-				this.alertDialogToggle('warn')
 			},
 			alertDialogToggle(type) {
 				this.alertDialog.msgType = type
