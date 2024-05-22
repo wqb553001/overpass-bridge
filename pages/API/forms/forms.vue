@@ -636,7 +636,6 @@
 					// 1e: content<br>1s: status,code,msg<br>2a-content: list<br>4s-order: <span style="color:red">orderNo</span>,orderState,memberId<br>
 					let newMap = new Map()
 					let checkMap = new Map()
-					str = str.replace(' ','');
 					if(str.includes('<br>')){
 						var arr = str.split('<br>')
 						for (let e of arr) {
@@ -644,8 +643,8 @@
 							if(e) {
 								let key = e.substring(0, e.indexOf(':'))
 								let valA = e.substring(e.indexOf(':')+1)
-								let valB = valA.replace('<span style="color:red">', '')
-								valB = valB.replace('</span>', '')
+								let valB = valA.replaceAll('<span style="color:red">', '')
+								valB = valB.replaceAll('</span>', '')
 								this.refreshRepeatFieldMap(valB)
 								newMap.set(key, [valA, valB])
 								checkMap.set(key, valB)
