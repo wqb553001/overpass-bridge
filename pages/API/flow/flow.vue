@@ -15,7 +15,7 @@
 					<uni-td align="left" >{{ index>0?item.relation:'第一个接口，无需配置' }}</uni-td>
 					<uni-td align="left" >
 						<uni-easyinput class="respExplained" auto-height="true" type="textarea"
-							v-html="item.fields" disabled="false" maxlength="5000" />
+							v-html="item.respExplainedStyleStr" disabled="false" maxlength="5000" />
 					</uni-td>
 					<uni-td>
 						<view v-if="item.id>0">
@@ -24,12 +24,14 @@
 						</view>
 						
 						<view v-if="item.id>0">
-							<uni-icons type="compose" size="40" @click="navigateToEditInterface(item.id)" class="buttonClass" ></uni-icons>							
+							<uni-icons type="compose" size="40" @click="navigateToEditInterface(item.id, item.flowId)" class="buttonClass" ></uni-icons>							
 						</view>
 						<view v-if="item.lastId>1">
 							<uni-icons type="up" size="40" @click="moveUp(item, index)" class="buttonClass" ></uni-icons>
 						</view>
-						<uni-icons type="plusempty" size="40" @click="addInterface(item.id, index)" class="buttonClass" ></uni-icons>						
+						<view v-if="initData.flowId>1">
+							<uni-icons type="plusempty" size="40" @click="addInterface(item.id, index)" class="buttonClass" ></uni-icons>
+						</view>
 						<view v-if="item.nextId>1">
 							<uni-icons type="down" size="40" @click="moveDown(item, index)" class="buttonClass" ></uni-icons>
 						</view>
@@ -46,7 +48,7 @@
 		</uni-popup>
 		<!-- 确认窗弹窗 -->
 		<uni-popup ref="alertDialog" type="dialog">
-			<uni-popup-dialog @confirm="alertDialogConfirm" @close="dialogClose" :type="alertDialog.msgType" :cancelText="alertDialog.cancelText" :confirmText="alertDialog.confirmText" :title="alertDialog.title" :content="alertDialog.content"></uni-popup-dialog>
+			<uni-popup-dialog @confirm="alertDialogConfirmDelete" @close="dialogClose" :type="alertDialog.msgType" :cancelText="alertDialog.cancelText" :confirmText="alertDialog.confirmText" :title="alertDialog.title" :content="alertDialog.content"></uni-popup-dialog>
 		</uni-popup>
 		<!-- 输入框弹窗 -->
 		<uni-popup ref="inputDialog" type="dialog">
@@ -64,17 +66,18 @@
 					respExplainedFormat: [
 						{
 							id: 0,
+							flowId: 0,
 							name: '', 
 							relation: '', 
-							fields: '', 
-							fieldsExplain: '',
 							nextId: 0,
 							lastId: 0,
 							
 							
 							url: '',
 							method: 'POST',
+							respExplainedStyleStr: '',
 							respExplainedJsonStr: '',
+							respConstructor: {},
 							limit: 0,
 							limitNum: 0,
 							nextPageField: '',
@@ -119,17 +122,18 @@
 				},
 				initData: {
 					id: 0,
+					flowId: 0,
 					name: '', 
 					relation: '', 
-					fields: '', 
-					fieldsExplain: '',
 					nextId: 0,
 					lastId: 0,
 					
 					
 					url: '',
 					method: 'POST',
+					respExplainedStyleStr: '',
 					respExplainedJsonStr: '',
+					respConstructor: {},
 					limit: 0,
 					limitNum: 0,
 					nextPageField: '',
@@ -198,13 +202,15 @@
 				},
 			};
 		},
-		onLoad(){
-			this.onLoadData()
+		onLoad(options){
+			console.log("操作流程id：" + options.id)
+			this.initData.flowId = options.id
+			if(options.id) this.onLoadData(options.id)
 		},
 		methods: {
-			onLoadData(){
+			onLoadData(flowId){
 				// 发送GET请求
-				var url = "http://localhost:8088/overpass/service-bridge/interface/findAll?status=0"
+				var url = "http://localhost:8088/overpass/service-bridge/interface/findByFlowId?flowId="+flowId
 				uni.request({
 					url: url, // 你的后端API地址
 					method: 'GET',
@@ -266,7 +272,7 @@
 					this.messageToggle('error', '已是最上层！')
 					return
 				}
-				var last,next
+				var last,next,last2
 				var map = new Map()
 				var list = this.baseFormData.respExplainedFormat
 				list.forEach(item=>{
@@ -274,24 +280,27 @@
 					if(e.lastId == item.id) last = item
 					if(e.nextId == item.id) next = item
 				})
+				var lastId = 0,lastId2 = 0
+				if(last){
+					if(last.lastId > 0) last2 = map.get(last.lastId)
+				}
 				
-				if(last.lastId==0){
-					// 上一节点是 头节点
-					e.lastId = 0
-				}else{
-					var last2 = map.get(last.lastId)
+				if(last){
+					last.nextId = e.nextId
+					last.lastId = e.id
+					lastId = last.id
+				}
+				if(last2){
 					last2.nextId = e.id
-					e.lastId = last2.id
+					lastId2 = last2.id
 				}
-				if(e.nextId==0){
-					// 当前节点是 尾节点
-					last.nextId = 0
-				}else{
-					last.nextId = next.id	
+				if(next){
+					next.lastId = lastId
 				}
-				last.lastId = e.id
-				e.nextId = last.id
-				
+				e.lastId = lastId2
+				e.nextId = lastId
+				// 移动到头部，关联关系清空。（防止误操作，暂不清空，放到后端业务逻辑中进行判断选取）
+				// if(lastId2==0) e.relation = ''
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
 				// 更新数据（nextId、lastId 发生了变更）
@@ -303,30 +312,34 @@
 					this.messageToggle('error', '已是最末层！')
 					return
 				}
-				var last,next
+				var last,next,next2
 				var map = new Map()
 				list.forEach(item=>{
 					map.set(item.id, item)
 					if(e.lastId == item.id) last = item
 					if(e.nextId == item.id) next = item
 				})
-				if(next.nextId==0){
-					// 下一节点是 尾节点
-					e.nextId = 0
-				}else{
-					var next2 = map.get(next.nextId)
+				var nextId2 = 0,lastId = 0,nextId = 0
+				
+				if(next){
+					if(next.nextId>0) next2 = map.get(next.nextId)
+				}
+				
+				nextId = e.nextId
+				if(next){
+					next.nextId = e.id
+					next.lastId = e.lastId
+				}
+				if(next2){
 					next2.lastId = e.id
-					e.nextId = next2.id
+					nextId2 = next2.id
 				}
-				if(e.lastId==0){
-					// 当前节点是 头节点
-					next.lastId = 0
-				}else{
-					last.nextId = next.id
-					next.lastId = last.id
+				if(last){
+					last.nextId = nextId
+					lastId = last.id
 				}
-				next.nextId = e.id
-				e.lastId = next.id
+				e.nextId = nextId2
+				e.lastId = nextId
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
@@ -344,6 +357,7 @@
 					// 添加真实对象
 					var interfaceMain = {
 						id: newId, 
+						flowId: this.initData.flowId, 
 						name: '',
 						fields: 'id='+newId+',nextId=0'+',lastId=0',
 						fieldsExplain: '',
@@ -368,6 +382,7 @@
 				});
 				var interfaceMain = {
 					id: newId, 
+					flowId: this.initData.flowId, 
 					name: 'E1001'+'订单数据' + newId,
 					fields: '',
 					fieldsExplain: '',
@@ -383,25 +398,27 @@
 				// this.$forceUpdate()
 			},
 			onCopy(id, index) {
-				// const _ = require("lodash");
 				let newId = Date.now()
 				console.log("复制 第"+(index+2)+"个 接口，id:"+id+"，新接口id:"+newId+"~~~~~~~~~")
-				var nextId = 0, copy
+				var nextId = 0, copy, item
+				// 复制节点，作为原节点的下一节点
 				this.baseFormData.respExplainedFormat.forEach(e=>{
+					// 以‘复制节点’作为上一节点的节点，即是 下一节点
 					if(e.lastId == id) {
+						// 新节点作为 原下一节点 的 上一节点
 						e.lastId = newId
+						// 下一节点，下移作为新节点的 下一节点
 						nextId = e.id
 					}
 					if(e.id == id) {
 						e.nextId = newId
-						// copy = e
-						// copy = _.cloneDeep(e);
-						copy = JSON.parse(JSON.stringify(e));
+						item = e;
 					}
 				});
-				
+				copy = JSON.parse(JSON.stringify(item))
 				// 信息重置
 				copy.id = newId
+				copy.name = copy.name + "-copy"
 				copy.nextId = nextId
 				copy.lastId = id
 				
@@ -438,11 +455,11 @@
 			
 			async asyncDeleteInterface(id) {
 				// event.preventDefault(); // 阻止表单默认提交行为
-				console.log('删除：', id);
+				console.log('删除：id='+id+"；flowId="+this.initData.flowId);
 				// 这里可以执行提交表单的逻辑，比如发送请求到服务器
 				// 例如使用uni.request提交数据
 				uni.request({
-					url: 'http://localhost:8088/overpass/service-bridge/interface/deleteById?interfaceId='+id,
+					url: 'http://localhost:8088/overpass/service-bridge/interface/deleteByIdAndFlowId?id='+id+'&flowId='+this.initData.flowId,
 					method: 'GET',
 					headers: {
 						'Content-Type': 'application/json'
@@ -476,7 +493,7 @@
 						// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
 						// e.name = 'E1001'+'订单数据' + e.id
 						// e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-						e.fields = e.respExplainedStr
+						// e.fields = e.respExplainedStr
 						list[i] = e
 						continue
 					}					
@@ -484,7 +501,7 @@
 					nextId = e.nextId
 					// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
 					// e.fields = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-					e.fields = e.respExplainedStr
+					// e.fields = e.respExplainedStr
 					list[i] = e
 				}
 				console.log("排序结束~~~~~~~~~")
@@ -525,7 +542,7 @@
 				this.$refs.inputDialog.close()
 			},
 			// 确认框，点击了 删除
-			alertDialogConfirm() {
+			alertDialogConfirmDelete() {
 				this.deleteOne(this.alertDialog.optId)
 			},
 			messageToggle(type, msg) {
@@ -537,9 +554,9 @@
 				this.alertDialog.msgType = type
 				this.$refs.alertDialog.open()
 			},
-			navigateToEditInterface(id){
-				// 当前页面中
-				let url = `/pages/API/forms/forms?id=${id}`;
+			navigateToEditInterface(id, flowId){
+				// 跳转至 接口设置页面
+				let url = `/pages/API/forms/forms?id=${id}&flowId=${flowId}`;
 				uni.navigateTo({
 				    url: url
 				});

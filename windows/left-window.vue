@@ -22,8 +22,8 @@
 		data() {
 			return {
 				nav: [
-					'component',
 					'API',
+					'component',
 					'extUI',
 					'template'
 				],
@@ -55,7 +55,7 @@
 				if (!pageUrl) return
 				const pageName = this.$route.path.split('/')[4]
 				if (pageUrl === '/' || this.nav.includes(pageName)) {
-					const tabbarUrl = pageName ? (pageName === 'component' ? '/' : `/pages/tabBar/${pageName}/${pageName}`) : '/'
+					const tabbarUrl = pageName ? (pageName === 'API' ? '/' : `/pages/tabBar/${pageName}/${pageName}`) : '/'
 					if (pageUrl === '/' || pageUrl === tabbarUrl) {
 						uni.switchTab({
 							url: pageUrl,
@@ -75,7 +75,7 @@
 				if (matched) {
 					const pageUrl = this.$route.path
 					const tabbarName = this.$route.path.split('/')[2]
-					const tabbarUrl = tabbarName && (tabbarName === 'component' ? '/' : `/pages/tabBar/${tabbarName}/${tabbarName}`)
+					const tabbarUrl = tabbarName && (tabbarName === 'API' ? '/' : `/pages/tabBar/${tabbarName}/${tabbarName}`)
 					uni.switchTab({
 						url: tabbarUrl,
 						success(e) {
@@ -121,9 +121,9 @@
 			handlerRoute(newRoute) {
 				if (this.isPC) {
 					if (newRoute.path === '/') {
-						// uni.redirectTo({
-						// 	url: '/pages/component/view/view'
-						// })
+						uni.redirectTo({
+							url: '/pages/API/thema/thema'
+						})
 					} else if (!newRoute.matched.length) {
 						uni.redirectTo({
 							url: '/pages/error/404'

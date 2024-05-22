@@ -27,24 +27,18 @@
 		<view class="uni-container" style="margin-top: 20px;">
 			<uni-table ref="table" :loading="loading" border stripe emptyText="暂无更多数据" >
 				<uni-tr>
-					<uni-th align="center">序号</uni-th>
-					<uni-th align="center">流程名称</uni-th>
-					<uni-th align="center">固定参数</uni-th>
-					<uni-th width="400" align="center">流程描述</uni-th>
-					<uni-th align="center">操作</uni-th>
+					<uni-th width="50" align="center">序号</uni-th>
+					<uni-th width="350" align="center">流程名称</uni-th>
+					<uni-th width="150" align="center">固定参数</uni-th>
+					<uni-th width="350" align="center">流程描述</uni-th>
+					<uni-th width="150" align="center">操作</uni-th>
 				</uni-tr>
 				<uni-tr v-for="(item, index) in baseFormData.respExplainedFormat" :key="index+1">
 					<uni-td align="left">{{ index+1 }}</uni-td>
 					<uni-td>{{ item.name }}</uni-td>
 					<uni-td align="left" >{{ item.condition }}</uni-td>
 					<uni-td align="left" >{{ item.desc }}</uni-td>
-					<uni-td> 
-<!-- 						<button class="button" size="mini" type="primary" @tap="" style="margin-left: -1px; " >复制</button> 
-						<button class="button" size="mini" type="primary" @tap="inputDialogToggle(item.id, item.relation, index)" style="margin-left: -1px; " >固定参数设置</button> 
-						<button class="button" size="mini" type="primary" @tap="addDynamicTable($event, item.id, index)" style="margin-left: -1px; " >新增</button> -->
-						
-						
-						<!-- <uni-icons type="plusempty" size="40" @click="addDynamicTable($event, item.id, index)" class="buttonClass" ></uni-icons> -->
+					<uni-td>
 						<view v-if="item.id>0">
 							<uni-icons type="closeempty" size="40" @click="deleteFlowAlertDialogToggle(item)" class="buttonClass" ></uni-icons>
 							<uni-icons type="redo" size="40" @click="onCopy(item.id, index)" class="buttonClass" ></uni-icons>
@@ -55,7 +49,10 @@
 						</view>
 						<view v-if="item.lastId>1">
 							<uni-icons type="up" size="40" @click="moveUp(item, index)" class="buttonClass" ></uni-icons>
-						</view>						
+						</view>
+						
+						<uni-icons type="right" size="40" @click="navigateToEditInterface(item.id)" class="buttonClass" ></uni-icons>
+						
 						<view v-if="item.nextId>1">
 							<uni-icons type="down" size="40" @click="moveDown(item, index)" class="buttonClass" ></uni-icons>
 						</view>
@@ -188,7 +185,7 @@
 					this.messageToggle('error', '已是最上层！')
 					return
 				}
-				var last,next
+				var last,next,last2
 				var map = new Map()
 				var list = this.baseFormData.respExplainedFormat
 				list.forEach(item=>{
@@ -196,23 +193,25 @@
 					if(e.lastId == item.id) last = item
 					if(e.nextId == item.id) next = item
 				})
+				var lastId = 0,lastId2 = 0
+				if(last){
+					if(last.lastId > 0) last2 = map.get(last.lastId)
+				}
 				
-				if(last.lastId==0){
-					// 上一节点是 头节点
-					e.lastId = 0
-				}else{
-					var last2 = map.get(last.lastId)
+				if(last){
+					last.nextId = e.nextId
+					last.lastId = e.id
+					lastId = last.id
+				}
+				if(last2){
 					last2.nextId = e.id
-					e.lastId = last2.id
+					lastId2 = last2.id
 				}
-				if(e.nextId==0){
-					// 当前节点是 尾节点
-					last.nextId = 0
-				}else{
-					last.nextId = next.id	
+				if(next){
+					next.lastId = lastId
 				}
-				last.lastId = e.id
-				e.nextId = last.id
+				e.lastId = lastId2
+				e.nextId = lastId
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
@@ -225,30 +224,35 @@
 					this.messageToggle('error', '已是最末层！')
 					return
 				}
-				var last,next
+				var last,next,next2
 				var map = new Map()
 				list.forEach(item=>{
 					map.set(item.id, item)
 					if(e.lastId == item.id) last = item
 					if(e.nextId == item.id) next = item
 				})
-				if(next.nextId==0){
-					// 下一节点是 尾节点
-					e.nextId = 0
-				}else{
-					var next2 = map.get(next.nextId)
+				var nextId2 = 0,lastId = 0,nextId = 0
+				
+				if(next){
+					if(next.nextId>0) next2 = map.get(next.nextId)
+				}
+				
+				nextId = e.nextId
+				if(next){
+					next.nextId = e.id
+					next.lastId = e.lastId
+				}
+				if(next2){
 					next2.lastId = e.id
-					e.nextId = next2.id
+					nextId2 = next2.id
 				}
-				if(e.lastId==0){
-					// 当前节点是 头节点
-					next.lastId = 0
-				}else{
-					last.nextId = next.id
-					next.lastId = last.id
+				if(last){
+					last.nextId = nextId
+					lastId = last.id
 				}
-				next.nextId = e.id
-				e.lastId = next.id
+				e.nextId = nextId2
+				e.lastId = nextId
+				
 				
 				// 重排序
 				this.sortInterface(this.baseFormData.respExplainedFormat)
@@ -261,7 +265,7 @@
 					this.messageToggle('warn', '流程名称不能为空~')
 					return
 				}
-				const old = this.baseFormData.respExplainedFormat.find(e=>e.name == this.flowForm.name)
+				const old = this.baseFormData.respExplainedFormat.find(e=>e.id != id && e.name == this.flowForm.name)
 				if(old){
 					this.messageToggle('error', '添加失败！流程名称重复。请增加适当的标志，便于区分~')
 					return
@@ -269,7 +273,11 @@
 				
 				if(id){
 					// 提交 修改
-					const edit = this.baseFormData.respExplainedFormat.find(e=>e.id == id)
+					const edit = this.baseFormData.respExplainedFormat.find(e=>e.id == id)	
+					if(edit.id == this.flowForm.id &&edit.name == this.flowForm.name &&edit.condition	== this.flowForm.condition &&edit.desc == this.flowForm.desc){
+						this.messageToggle('warn', '已完成，不必重复操作~')
+						return
+					}
 					// 信息回填 输入框 需要编辑的
 					edit.id			= this.flowForm.id 		
 					edit.name		= this.flowForm.name 		
@@ -354,6 +362,7 @@
 				copy.id = newId
 				copy.nextId = nextId
 				copy.lastId = id
+				copy.name = copy.name + "-copy" + "-" + newId
 				
 				this.baseFormData.respExplainedFormat.push(copy);
 				
@@ -447,26 +456,28 @@
 						var e = head
 						nextId = head.nextId
 						// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-						e.name = 'F1001'+'流程数据' + e.id
-						e.condition = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId+e.condition
+						e.name = e.name + e.id
+						// e.condition = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId+e.condition
 						list[i] = e
 						continue
 					}					
 					var e = map.get(nextId)
 					nextId = e.nextId
 					// e.relation = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId
-					e.name = 'F1001'+'流程数据' + e.id
-					e.condition = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId + e.condition
+					e.name = e.name + e.id
+					// e.condition = 'id='+e.id+',nextId='+e.nextId+',lastId='+e.lastId + e.condition
 					list[i] = e
 				}
 				console.log("排序结束~~~~~~~~~")
 			},
-			
-			addDynamicTable(e, id, index) {
-				// 添加字段输入框
-				this.baseFormData.respExplainedFormat.push({id: Date.now(), name: 'F1001'+'订单流程' + id, desc: '流程详情', condition: 'sourceTypes=[1,3,5]'});
-				// this.$forceUpdate()
+			navigateToEditInterface(id){
+				// 跳转至 接口设置页面
+				let url = `/pages/API/flow/flow?id=${id}`;
+				uni.navigateTo({
+				    url: url
+				});
 			},
+			
 			// 弹出输入框
 			inputDialogToggle(id, relation, index) {
 				// console.log("点击修改 ", index)

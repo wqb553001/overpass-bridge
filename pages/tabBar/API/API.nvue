@@ -96,9 +96,6 @@
 							name:'流程',
 							url:'flow',
 						},{
-							name:'接口',
-							url:'forms',
-						},{
 							name:'异常管理',
 							url:'protect',
 						},{

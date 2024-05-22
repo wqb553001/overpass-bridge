@@ -2,7 +2,7 @@
 	<view class="top-window-header">
 		<view class="left-header logo">
 			<!-- <navigator class="logo" open-type="reLaunch" url="/pages/component/view/view"> --> <!-- 导航跳转页 -->
-			<navigator class="logo" open-type="reLaunch" url="/pages/API/forms/forms">
+			<navigator class="logo" open-type="reLaunch" url="/pages/API/thema/thema">
 				<image src="../static/logo.png" mode="heightFix" style="width: 30px;"></image>
 				<text>Overpass Bridge</text>
 			</navigator>
@@ -46,8 +46,7 @@
 				indexPage: [// 默认加载页
 				{
 					tabBar: '/pages/tabBar/API/API',
-					// index: '/pages/API/set-navigation-bar-title/set-navigation-bar-title'
-					index: '/pages/API/forms/forms'
+					index: '/pages/API/thema/thema'
 				},
 				{
 					tabBar: '/pages/tabBar/component/component',

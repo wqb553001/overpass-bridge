@@ -7,9 +7,9 @@
 			<view class="example">
 				<!-- 基础用法，不包含校验规则 -->
 				<uni-forms ref="baseForm" :model="baseFormData" labelWidth="80px">
-					<view v-if="baseFormData.lastId>0">
-						<uni-forms-item label="关联关系" required>
-							<uni-easyinput v-model="baseFormData.relation" placeholder="请输入与上一接口的关联关系" />
+					<view v-if="baseFormData.lastId>0" >
+						<uni-forms-item label="关联关系" required >
+							<uni-easyinput v-model="baseFormData.relation" @longpress="longpress" example="orderStatus = 1;flow = 1" placeholder="请输入与上一接口的关联关系。取值赋值用( = : )两者中的一种,多个关系用( &  ;  , )三个其中一种连接。例 orderStatus = 1;flow = 1" />
 						</uni-forms-item>
 					</view>
 					
@@ -114,16 +114,16 @@
 							</view>
 						</uni-section>
 						<uni-section title="展示" type="line">
-							<uni-easyinput type="textarea" v-model="baseFormData.respConstructor" disabled="false"
+							<uni-easyinput type="textarea" v-model="baseFormData.introduction" disabled="false"
 								maxlength="5000" />
 						</uni-section>
 						<uni-section title="解析结构" type="line">
-							<uni-easyinput auto-height="true" type="textarea" v-html="baseFormData.respExplainedStr" disabled="false" maxlength="5000" />
+							<uni-easyinput auto-height="true" type="textarea" v-html="baseFormData.respExplainedStyleStr" disabled="false" maxlength="5000" />
 							<view class="uni-container" style="margin-top: 20px;">
 								<uni-table ref="table" :loading="loading" border stripe emptyText="暂无更多数据">
 									<uni-tr>
 										<uni-th width="4" align="center">序号</uni-th>
-										<uni-th width="40" align="center">层级</uni-th>
+										<uni-th width="60" align="center">层级</uni-th>
 										<uni-th align="center">字段</uni-th>
 										<uni-th width="4" align="center">重命名</uni-th>
 									</uni-tr>
@@ -236,7 +236,7 @@
 									<view style="font-size: 14px; color: #666; padding: 0 5px 0 0px;">分组字段</view>
 									<zxz-uni-data-select
 										v-model="baseFormData.dynamicTable.groupMergeField.array[index].groupField"
-										filterable multiple dataKey="label" dataValue="value" :localdata="simpleFields"
+										filterable multiple :localdata="simpleFields"
 										@change="change"></zxz-uni-data-select>
 									<view style="font-size: 14px; color: #666; padding: 0 5px 0 15px;">聚合</view>
 									<uni-data-picker
@@ -347,6 +347,7 @@
 				// 基础表单数据
 				baseFormData: {
 					id: 0,
+					flowId: 0,
 					lastId: 0,
 					nextId: 0,
 					name: '',
@@ -360,10 +361,12 @@
 					statusField: '',
 					filterCondition: '',
 					dataContentField: '',
+					dataContentFields: '',
+					simpleFields: '',
 					
 					introduction: '',
-					respConstructor: '',
-					respExplainedStr: '',
+					respConstructor: {},
+					respExplainedStyleStr: '',
 					respExplainedJsonStr: '',
 					respExplainedFormat: {},
 					
@@ -402,6 +405,7 @@
 					paramTimes:[]
 				}, 
 				simpleFields: [],
+				dataContentFields: [],
 				// 输入框-提示信息
 				placeholder: {
 					nextPageField: '请输入下一页取值条件 如 page:#page + 1|page'
@@ -449,7 +453,7 @@
 				localObj: {
 					introduction: '',
 					respConstructor: '',
-					respExplainedStr: '',
+					respExplainedStyleStr: '',
 					respExplainedFormat: {}
 				},
 				// 提示信息弹窗 -begin --<<--
@@ -459,7 +463,6 @@
 					messageText: '这是一条成功提示',
 					value: ''
 				},
-				dataContentFields: [],
 				// 预先提醒-重试暂停
 				
 				// 表单数据
@@ -543,15 +546,17 @@
 			}
 		},
 		onLoad(options) {
-			console.log("传递了参数：" + options.id)
-			if(options.id) this.onLoadData(options.id)
+			console.log("配置接口：id=" + options.id+"；flowId="+options.flowId)
+			this.baseFormData.id = options.id
+			this.baseFormData.flowId = options.flowId
+			if(options.id) this.onLoadData(options.id, options.flowId)
 			// this.getData(1)
 		},
 		onReady() {},
 		methods: {
-			onLoadData(id){
+			onLoadData(id, flowId){
 				// 发送GET请求
-				var url = "http://localhost:8088/overpass/service-bridge/interface/findById?interfaceId="+id
+				var url = "http://localhost:8088/overpass/service-bridge/interface/findByIdAndFlowId?id="+id+"&flowId="+flowId
 				uni.request({
 					url: url, // 你的后端API地址
 					method: 'GET',
@@ -570,14 +575,42 @@
 					}
 				});
 			},
+			
+			
 			// 加载后数据回显
 			onloadDataAfterReshow(){
 				// 取指定数量 的显示隐藏 设置
 				this.pageConditionShowHidden(this.baseFormData.limit)
 				
 				// 回显json数据解析表格
-				const respExplainedMap = this.styleStrToMap(this.baseFormData.respExplainedStr)
-				this.baseFormData.respExplainedFormat = this.mapValueRed(respExplainedMap)
+				this.baseFormData.respExplainedFormat = this.reshowExplain()
+				
+				// 回显 集合字段
+				if(this.baseFormData.dataContentFields){
+					var arr = this.baseFormData.dataContentFields.split(",")
+					for(let key of arr){
+						this.dataContentFields.push({
+							text: key,
+							value: key
+						})
+					}
+				}
+				this.dataContentFields.push({
+					text: '全取',
+					value: ''
+				})
+				
+				// 回显 普通字段
+				if(this.baseFormData.simpleFields){
+					var arr = this.baseFormData.simpleFields.split(",")
+					for(let key of arr){
+						// 多选下拉框，与 单选下拉框 选项不一样（单选为 text，多选为 label）
+						this.simpleFields.push({
+							label: key,
+							value: key
+						})
+					}
+				}
 				
 				// 回显时间字段表格
 				var timeFieldArray = this.baseFormData.dynamicTable.timeField.array
@@ -595,8 +628,42 @@
 				// 回显 取值范围
 				this.dataLimitStyleChange(this.baseFormData.limit)
 			},
-			switchChange() {
-				console.log("单选调整……")
+			
+			// 回显json数据解析表格
+			reshowExplain(){
+				let str = this.baseFormData.respExplainedStyleStr
+				if(str){
+					// 1e: content<br>1s: status,code,msg<br>2a-content: list<br>4s-order: <span style="color:red">orderNo</span>,orderState,memberId<br>
+					let newMap = new Map()
+					let checkMap = new Map()
+					str = str.replace(' ','');
+					if(str.includes('<br>')){
+						var arr = str.split('<br>')
+						for (let e of arr) {
+							
+							if(e) {
+								let key = e.substring(0, e.indexOf(':'))
+								let valA = e.substring(e.indexOf(':')+1)
+								let valB = valA.replace('<span style="color:red">', '')
+								valB = valB.replace('</span>', '')
+								this.refreshRepeatFieldMap(valB)
+								newMap.set(key, [valA, valB])
+								checkMap.set(key, valB)
+							}
+							
+						}
+					}
+					this.fieldCheck.respExplainedMap = this.mapReverse(checkMap)
+					return newMap;
+				}
+			},
+			refreshRepeatFieldMap(fieldStr){
+				if(fieldStr){
+					let arr = fieldStr.split(',')
+					for(let field of arr){
+						this.judgeRepeatAndCollectFields(field)
+					}
+				}
 			},
 			inputDialogToggle(key, val) {
 				// console.log("点击修改 ", val)
@@ -619,7 +686,7 @@
 					if(e.includes("=")){
 						before=e.substring(0, e.indexOf("="))
 						after=e.substring(e.indexOf("=")+1)
-						this.judgeRepeatChangeFields(after, before)
+						this.renameRefreshRepeatFieldMap(after, before)
 					}
 				}
 				
@@ -630,11 +697,11 @@
 			
 			renameAfter(){
 				const respExplainedMap = this.fieldCheck.respExplainedMap
-				this.baseFormData.respExplainedStr = this.mapToStyleStr(respExplainedMap)
+				this.baseFormData.respExplainedStyleStr = this.mapToStyleStr(respExplainedMap)
 				this.baseFormData.respExplainedFormat = this.mapValueRed(this.mapReverse(respExplainedMap))
 			},
 			
-			judgeRepeatChangeFields(newField, oldField){
+			renameRefreshRepeatFieldMap(newField, oldField){
 				// 字段集
 				if(this.fieldCheck.allFieldMap.has(newField)) {
 					// 重命名后的字段，与现有字段名重复
@@ -828,9 +895,9 @@
 			jsonDataVolid() {
 				const msg = "JSON 格式检查："
 				this.dataContentFields = [] // 清空，待结构识别后，重新设置
+				this.clearData()
 				if (this.checkJSON(this.baseFormData.introduction)) {
 					this.messageToggle('success', msg + '通过！')
-					this.baseFormData.respConstructor = this.baseFormData.introduction
 					// 手动增加一条全取选项
 					this.dataContentFields.push({
 						text: '全取',
@@ -856,13 +923,16 @@
 					this.explainRspJsonToMap(respJSON)
 					console.log('step0：通过 ')
 					const respExplainedMap = this.fieldCheck.respExplainedMap
-					this.baseFormData.respExplainedStr = this.mapToStyleStr(respExplainedMap)
+					
+					this.mapToJson(this.fieldCheck.respExplainedMap, this.baseFormData.respConstructor)
+					
+					this.baseFormData.respExplainedStyleStr = this.mapToStyleStr(respExplainedMap)
 					console.log('step1：通过 ')
 					this.baseFormData.respExplainedFormat = this.mapValueRed(this.mapReverse(respExplainedMap))
-					
+					this.baseFormData.respExplainedJsonStr = this.mapToJson(this.mapReverse(respExplainedMap))
+					// this.mapToJson(this.mapValueRed(this.mapReverse(respExplainedMap)), this.baseFormData.respExplainedFormat)
+					// this.styleMap(this.baseFormData.respExplainedFormat, this.mapReverse(respExplainedMap))
 					console.log('step2：通过 ')
-					// this.baseFormData.respExplainedJsonStr = JSON.stringify(Object.fromEntries(this.baseFormData.respExplainedFormat))
-					this.baseFormData.respExplainedJsonStr = JSON.stringify(this.baseFormData.respExplainedFormat)
 					return true
 				} catch (e) {
 					// 不是严格的 JSON 格式
@@ -871,10 +941,23 @@
 					return false
 				}
 			},
+			clearData(){
+				this.fieldCheck.respExplainedMap = new Map()
+				this.fieldCheck.repeatFieldMap = new Map()
+				this.fieldCheck.allFieldMap = new Map()
+			},
+			mapToJson(map){
+				let json = {}
+				for(let [k,v] of map){
+					json[k]=v;
+				}
+				// map.forEach((value,key)=>{json[key]=value})
+				return json
+			},
+			jsonToMap(json){
+				return new Map(Object.entries(json));
+			},
 			explainRspJsonToMap(rspJSON) {
-				// let respExplainedMap = new Map();
-				// const allFieldSet = new Set();
-				// const repeatFieldSet = new Set();
 				if (Array.isArray(rspJSON)) {
 					this.handleJSONArray(0, null, rspJSON);
 				} else {
@@ -923,6 +1006,12 @@
 			},
 			mapValueRed(map) {
 				let newMap = new Map()
+				for (const [key, value] of map) {
+					newMap.set(key, [this.signColorForFieldToRed(value), value])
+				}
+				return newMap
+			},
+			styleMap(newMap, map) {
 				for (const [key, value] of map) {
 					newMap.set(key, [this.signColorForFieldToRed(value), value])
 				}
@@ -993,6 +1082,11 @@
 								label: jsonKey,
 								value: jsonKey
 							})
+							if(this.baseFormData.simpleFields==''){
+								this.baseFormData.simpleFields+= jsonKey
+							}else{
+								this.baseFormData.simpleFields += (',' + jsonKey)
+							}
 							break;
 
 						case util.JsonValueDataTypeEnum.JSON_ARRAY:
@@ -1007,6 +1101,11 @@
 								text: jsonKey,
 								value: jsonKey
 							})
+							if(this.baseFormData.dataContentFields==''){
+								this.baseFormData.dataContentFields+= jsonKey
+							}else{
+								this.baseFormData.dataContentFields += (',' + jsonKey)
+							}
 							this.handleJSONArray(cycle, jsonKey, jsonValue);
 							break;
 
@@ -1162,6 +1261,13 @@
 				}).catch(err => {
 					console.log('err', err);
 				})
+				
+				
+				// 跳转至 流程页面
+				let url = `/pages/API/flow/flow?id=${this.baseFormData.flowId}`;
+				uni.navigateTo({
+					url: url
+				});
 			},
 
 			// 获取数据
@@ -1210,6 +1316,10 @@
 							total: total
 						})
 				}, 500)
+			},
+			longpress(e){
+				// console.log("自定义属性：", e.$attrs.example)
+				// console.log("自定义属性：", e.currentTarget.example)
 			}
 		},
 		onNavigationBarButtonTap(e) {
